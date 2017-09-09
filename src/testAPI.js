@@ -1,38 +1,29 @@
 
 import d3 from 'd3';
-import KArray from './helper/KArray.js';
 import {default as cmp} from './component/Component.js';
 import {LocalServerActivity, LocalServerChemical} from './fetcher/LocalServer.js';
 import {ScreenerFitting, ScreenerRawValue} from './fetcher/Screener.js';
 import {ScreenerFittingStub, ScreenerRawValueStub} from './fetcher/ScreenerTestStub.js';
 
-const API = new Map(Object.entries({
+const API = {
   chemical: new LocalServerChemical(),
   activity: new LocalServerActivity(),
   screenerrawvalue: new ScreenerRawValue(),
   screenerfitting: new ScreenerFitting(),
   screenerrawvaluestub: new ScreenerRawValueStub(),
   screenerfittingstub: new ScreenerFittingStub()
-}));
+};
 
 const testCases = [];
-const localServer = API.get('chemical');
-const localServerActivity = API.get('activity');
-
-testCases.push({
-  name: 'resources',
-  testCase: () => {
-    return KArray.from(API.values()).map(api => {
-      return api.getResources();
-    }).extendAsync();
-  }
-});
 
 testCases.push({
   name: 'status',
-  testCase: () => {
-    return localServer.status();
-  }
+  testCase: () => API.chemical.status()
+});
+
+testCases.push({
+  name: 'resources',
+  testCase: () => API.chemical.getResources()
 });
 
 testCases.push({
@@ -40,15 +31,12 @@ testCases.push({
   testCase: () => {
     const query = {
       method: 'chemsql',
-      targets: [
-        'sdf_demo:DRUGBANKFDA',
-        'sdf_demo:DRUGBANKALL'
-      ],
+      targets: ['sdf_demo:DRUGBANKFDA'],
       key: 'ID',
       values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
       operator: 'fm'
     };
-    return localServer.getRecords(query);
+    return API.chemical.getRecords(query);
   }
 });
 
@@ -65,7 +53,7 @@ testCases.push({
       values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
       operator: 'in'
     };
-    return localServerActivity.getRecords(query);
+    return API.activity.getRecords(query);
   }
 });
 
@@ -79,11 +67,11 @@ testCases.push({
       querySource: 'sdf_demo:DRUGBANKFDA',
       value: 'DB00115'
     };
-    return localServer.getRecords(query).then(res => {
+    return API.chemical.getRecords(query).then(res => {
       return new Promise(r => {
         setTimeout(() => {
           const query = {id: res.id, command: 'abort'};
-          localServer.getRecords(query).then(rows => r([res, rows]));
+          API.chemical.getRecords(query).then(rows => r([res, rows]));
         }, 5000);
       });
     });
@@ -100,11 +88,11 @@ testCases.push({
       values: [1000],
       operator: 'gt'
     };
-    return localServer.getRecords(query).then(res => {
+    return API.chemical.getRecords(query).then(res => {
       return new Promise(r => {
         setTimeout(() => {
           const query = {id: res.id, command: 'abort'};
-          localServer.getRecords(query).then(rows => r([res, rows]));
+          API.chemical.getRecords(query).then(rows => r([res, rows]));
         }, 5000);
       });
     });
@@ -119,7 +107,7 @@ testCases.push({
       query_source: 'sdf_demo:DRUGBANKFDA',
       value: 'DB00115'
     };
-    return localServer.strprev(query)
+    return API.chemical.strprev(query)
       .then(res => new DOMParser().parseFromString(res, "image/svg+xml"));
   }
 });
@@ -137,7 +125,7 @@ function run() {
   testCases.forEach(p => {
     p.testCase().then(res => {
       console.info(p.name);
-      console.log(res);
+      console.info(res);
       const row = [{'test': p.name, 'result': 'OK'}];
       cmp.appendTableRows(d3.select('#test'), row, d => d.key);
     }).catch(err => {

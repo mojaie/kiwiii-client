@@ -22,25 +22,23 @@ function initialize() {
   } else {
     console.info('Off-line mode is not supported');
   }
-  const serverTmpl = localServer.templates().then(res => {
-    store.setGlobalConfig('templates', res.templates);
-  });
   const serverConfig = localServer.status().then(res => {
     store.setGlobalConfig('server', res);
   });
-  // TODO: skip loader if there is already resources in the store
-  // 1. collate resource version
-  // 2. if no local resource or server resource is newer, fetch
-  const rsrcFetched = KArray.from(
-      store.fetcherInstances().map(api => api.getResources())
-    ).extendAsync().then(res => {
-      const indexed = res.map((e, i) => {
-        e.idx = i;
-        return e;
+  return serverConfig.then(() => {
+    const clientResource = store.getResourceVersion();
+    if (server.resourceVersion === clientResource) {
+      localServer.getResources().then(res => {
+        const indexed = res.map((e, i) => {
+          e.idx = i;
+          return e;
+        });
+        store.setResources(indexed);
+        store.setGlobalConfig('resources', res.resources);
+        store.setGlobalConfig('templates', res.templates);
       });
-      return store.setResources(indexed);
-    });
-  return Promise.all([serverTmpl, serverConfig, rsrcFetched]);
+    }
+  });
 }
 
 

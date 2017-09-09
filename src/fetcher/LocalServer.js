@@ -1,6 +1,8 @@
 
 import Fetcher from './Fetcher.js';
 
+import {default as parser} from '../helper/parser.js';
+
 
 export class LocalServerActivity extends Fetcher {
   constructor() {
@@ -14,35 +16,23 @@ export class LocalServerActivity extends Fetcher {
     const formData = new FormData();
     formData.set('query', JSON.stringify(query));
     return fetch(`${this.baseURL}${url}`,
-      {method: 'post', body: formData, credentials: 'include'});
+      {method: 'get', body: formData, credentials: 'include'});
   }
 
   request(url, query={}) {
-    const formData = new FormData();
-    const qmap = new Map(Object.entries(query));
-    qmap.forEach((v, k) => {
-      if (Array.isArray(v)) {
-        v.forEach(e => formData.append(k, e));
-      } else {
-        formData.set(k, v);
-      }
-    });
-    return fetch(`${this.baseURL}${url}`,
-      {method: 'post', body: formData, credentials: 'include'});
+    const params = parser.queryURL(query);
+    const q = params.length ? '?' : '';
+    return fetch(
+      `${this.baseURL}${url}${q}${params}`,
+      {credentials: 'include'}
+    );
   }
 
   getResources() {
-    return this.request('schema', {domain: this.domain})
+    return this.request('schema')
       .then(res => res.json())
       .then(json => {
         json.resources.forEach(rsrc => {
-          rsrc.domain = this.domain;
-          rsrc.columns.forEach(col =>{
-            if (!col.hasOwnProperty('name')) col.name = col.key;
-            if (!col.hasOwnProperty('dataColumn')) col.dataColumn = col.key;
-            if (!col.hasOwnProperty('method')) col.method = 'sql';
-            col.visible = true;
-          });
           this.entities.push(rsrc.entity);
         });
         this.available = true;
@@ -51,12 +41,8 @@ export class LocalServerActivity extends Fetcher {
   }
 
   getRecords(queries) {
-    return this.serializedRequest('sql', queries)
-      .then(res => res.json())
-      .then(json => {
-        json.domain = this.domain;
-        return json;
-      });
+    return this.request('sql', queries)
+      .then(res => res.json());
   }
 
   getRecordsByCompound(compound) {
@@ -79,7 +65,7 @@ export class LocalServerActivity extends Fetcher {
       values: ids,
       operator: 'fm'
     };
-    return this.serializedRequest('sql', query)
+    return this.request('sql', query)
       .then(res => res.json())
       .then(json => {
         const mapping = {};
@@ -103,7 +89,7 @@ export class LocalServerActivity extends Fetcher {
   }
 
   strprev(query) {
-    return this.serializedRequest('strprev', query).then(res => res.text());
+    return this.request('strprev', query).then(res => res.text());
   }
 
   exportExcel(query) {
@@ -156,18 +142,9 @@ export class LocalServerChemical extends LocalServerActivity {
   }
 
   getResources() {
-    return this.request('schema', {domain: this.domain})
+    return this.request('schema')
       .then(res => res.json())
       .then(json => {
-        json.resources.forEach(rsrc => {
-          rsrc.domain = this.domain;
-          rsrc.columns.forEach(col =>{
-            if (!col.hasOwnProperty('name')) col.name = col.key;
-            if (!col.hasOwnProperty('dataColumn')) col.dataColumn = col.key;
-            if (!col.hasOwnProperty('method')) col.method = 'chemsql';
-            col.visible = true;
-          });
-        });
         this.available = true;
         return json.resources;
       });
@@ -184,19 +161,13 @@ export class LocalServerChemical extends LocalServerActivity {
     } else {
       url = 'compute';
     }
-    return this.serializedRequest(url, query)
-      .then(res => res.json())
-      .then(json => {
-        json.domain = this.domain;
-        return json;
-      });
+    return this.request(url, query).then(res => res.json());
   }
 
   importSDF(query) {
     return this.request('sdf', query)
     .then(res => res.json())
     .then(json => {
-      json.domain = this.domain;
       json.columns.forEach(col =>{
         col.visible = this.hiddenColumns.includes(col.key) ? false : true;
       });
