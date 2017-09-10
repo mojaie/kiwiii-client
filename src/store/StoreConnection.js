@@ -32,6 +32,16 @@ function setGlobalConfig(key, value) {
 }
 
 
+function getAppSetting(key) {
+  return store.getAppSetting(key);
+}
+
+
+function setAppSetting(key, value) {
+  return store.putAppSetting(key, value);
+}
+
+
 // API instances
 
 const API = new Map(Object.entries({
@@ -105,12 +115,10 @@ function getResourceColumns(domains) {
   });
 }
 
-
-function getDataSourceColumns(domain, ids) {
-  return store.getResources([domain]).then(rsrcs => {
-    return KArray.from(ids.map(d => rsrcs.find(e => e.id === d).columns))
-      .extend();
-  });
+function resultColumns(data) {
+  return getResources(data.dataSource).then(rsrcs => {
+    return KArray.from(rsrcs.map(d => d.columns)).unique('key');
+  }).then(cols => store.getFetcher(data.domain).formatResult(cols, data));
 }
 
 
@@ -228,10 +236,10 @@ function reset() {
 
 
 export default {
-  getGlobalConfig, setGlobalConfig,
+  getAppSetting, setAppSetting, getGlobalConfig, setGlobalConfig,
   localChemInstance, getFetcher, fetcherInstances,
   dataFetcherInstances, dataFetcherDomains,
-  getResources, setResources, getResourceColumns, getDataSourceColumns,
+  getResources, setResources, getResourceColumns, resultColumns,
   getAllTables, getTablesByFormat, getTable, getRecords,
   getCurrentTable, getCurrentRecords,
   setColumnsToShow, joinColumn,

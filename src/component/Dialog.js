@@ -16,12 +16,6 @@ import {default as cmp} from './Component.js';
 const localServer = store.localChemInstance();
 
 
-function mergeDataSourceColumns(data) {
-  return store.getDataSourceColumns(data.domain, data.dataSource)
-  .then(cols => store.getFetcher(data.domain).formatResult(cols, data));
-}
-
-
 function pickDialog(rsrc, callback) {
   d3.select('#pick-target')
     .call(cmp.selectOptions, rsrc, d => d.entity, d => d.name)
@@ -40,9 +34,7 @@ function pickDialog(rsrc, callback) {
         values: d3form.textareaLines('#pick-queryarea'),
         operator: 'fm'
       };
-      return localServer.getRecords(query)
-        .then(mergeDataSourceColumns)
-        .then(callback);
+      return localServer.getRecords(query).then(callback);
     });
 }
 
@@ -68,9 +60,7 @@ function propDialog(rsrc, callback) {
         values: d3form.textareaLines('#prop-queryarea'),
         operator: d3form.value('#prop-operator')
       };
-      return localServer.getRecords(query)
-      .then(mergeDataSourceColumns)
-      .then(callback);
+      return localServer.getRecords(query).then(callback);
     });
 }
 
@@ -149,9 +139,7 @@ function structDialog(rsrc, callback) {
         molSizeCutoff: mthdop.classed('gls') ? d3form.valueInt('#struct-skip') : null,
         timeout: mthdop.classed('rd') ? d3form.valueInt('#struct-timeout') : null
       };
-      return localServer.getRecords(query)
-        .then(mergeDataSourceColumns)
-        .then(callback);
+      return localServer.getRecords(query).then(callback);
     });
 }
 

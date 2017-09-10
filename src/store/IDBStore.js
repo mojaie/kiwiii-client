@@ -2,12 +2,11 @@
 import Dexie from 'Dexie';
 
 // TODO: can indexed records improve query performance ?
-// TODO: remove app table. no longer used
 
 const schema = {
   app: 'key',
   items: 'id, format, responseDate',
-  resources: 'idx, id'
+  resources: 'id'
 };
 
 let idb = new Dexie('Store');
@@ -29,8 +28,7 @@ function putAppSetting(k, v) {  // returns id in success
 
 
 function getResources() {
-  return idb.resources.orderBy('idx')
-    .toArray();
+  return idb.resources.toArray();
 }
 
 

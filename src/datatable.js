@@ -155,7 +155,12 @@ function run() {
       dialog.sdfDialog(loadNewTable);
       if (!store.getGlobalConfig('onLine')) return Promise.resolve();
       return store.getResources('chemical').then(rsrc => {
-        dialog.pickDialog(rsrc, loadNewTable);
+        dialog.pickDialog(rsrc, res => {
+          return store.resultColumns(res).then(cols => {
+            res.columns = cols;
+            return loadNewTable(res);
+          });
+        });
         dialog.structDialog(rsrc, loadNewTable);
         dialog.propDialog(rsrc, loadNewTable);
       });

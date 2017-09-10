@@ -1,5 +1,4 @@
 
-import KArray from './helper/KArray.js';
 import {default as store} from './store/StoreConnection.js';
 
 const localServer = store.localChemInstance();
@@ -22,22 +21,22 @@ function initialize() {
   } else {
     console.info('Off-line mode is not supported');
   }
-  const serverConfig = localServer.status().then(res => {
-    store.setGlobalConfig('server', res);
-  });
-  return serverConfig.then(() => {
-    const clientResource = store.getResourceVersion();
-    if (server.resourceVersion === clientResource) {
-      localServer.getResources().then(res => {
-        const indexed = res.map((e, i) => {
-          e.idx = i;
-          return e;
-        });
-        store.setResources(indexed);
-        store.setGlobalConfig('resources', res.resources);
-        store.setGlobalConfig('templates', res.templates);
+  return localServer.status().then(server => {
+    store.setGlobalConfig('server', server);
+    return store.getAppSetting('serverInstance').then(instance => {
+      if (server.instance === instance) {
+        console.info('Local resource schema is already up to date');
+        return;
+      }
+      return localServer.schema().then(schema => {
+        console.info(`Resource schema is updated to version <${server.instance}>`);
+        return Promise.All([
+          store.setAppSetting('serverInstance', server.instance),
+          store.setResources(schema.resources),
+          store.setAppSetting('templates', schema.templates)
+        ]);
       });
-    }
+    });
   });
 }
 

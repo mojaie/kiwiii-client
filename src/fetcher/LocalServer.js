@@ -1,8 +1,6 @@
 
 import Fetcher from './Fetcher.js';
 
-import {default as parser} from '../helper/parser.js';
-
 
 export class LocalServerActivity extends Fetcher {
   constructor() {
@@ -20,24 +18,13 @@ export class LocalServerActivity extends Fetcher {
   }
 
   request(url, query={}) {
-    const params = parser.queryURL(query);
-    const q = params.length ? '?' : '';
-    return fetch(
-      `${this.baseURL}${url}${q}${params}`,
-      {credentials: 'include'}
-    );
+    const isEmpty = Object.keys(query).length;
+    const q = isEmpty ? `?query=${JSON.stringify(query)}` : '';
+    return fetch(`${this.baseURL}${url}${q}`, {credentials: 'include'});
   }
 
   getResources() {
-    return this.request('schema')
-      .then(res => res.json())
-      .then(json => {
-        json.resources.forEach(rsrc => {
-          this.entities.push(rsrc.entity);
-        });
-        this.available = true;
-        return json.resources;
-      });
+    return this.request('schema').then(res => res.json());
   }
 
   getRecords(queries) {
@@ -80,12 +67,12 @@ export class LocalServerActivity extends Fetcher {
       });
   }
 
-  status() {
-    return this.request('server').then(res => res.json());
+  schema() {
+    return this.request('schema').then(res => res.json());
   }
 
-  templates() {
-    return this.request('templates').then(res => res.json());
+  status() {
+    return this.request('server').then(res => res.json());
   }
 
   strprev(query) {

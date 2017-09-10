@@ -65,7 +65,8 @@ testCases.push({
       targets: ['sdf_demo:DRUGBANKFDA'],
       format: 'dbid',
       querySource: 'sdf_demo:DRUGBANKFDA',
-      value: 'DB00115'
+      value: 'DB00115',
+      ignoreHs: true
     };
     return API.chemical.getRecords(query).then(res => {
       return new Promise(r => {
@@ -86,7 +87,8 @@ testCases.push({
       targets: ['sdf_demo:DRUGBANKFDA'],
       key: '_mw',
       values: [1000],
-      operator: 'gt'
+      operator: 'gt',
+      ignoreHs: true
     };
     return API.chemical.getRecords(query).then(res => {
       return new Promise(r => {
@@ -104,7 +106,7 @@ testCases.push({
   testCase: () => {
     const query = {
       format: 'dbid',
-      query_source: 'sdf_demo:DRUGBANKFDA',
+      querySource: 'sdf_demo:DRUGBANKFDA',
       value: 'DB00115'
     };
     return API.chemical.strprev(query)
