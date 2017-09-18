@@ -28,7 +28,7 @@ export class LocalServerActivity extends Fetcher {
   }
 
   getRecords(queries) {
-    return this.request('wf', queries)
+    return this.request('search', queries)
       .then(res => res.json());
   }
 
@@ -143,8 +143,10 @@ export class LocalServerChemical extends LocalServerActivity {
       url = 'rows';
     } else if (query.hasOwnProperty('nodeTableId')) {
       url = 'graph';
+    } else if (["search", "filter", "chemsearch", "chemfilter", "exact"].includes(query.type)) {
+      url = 'search';
     } else {
-      url = 'wf';
+      url = 'job';
     }
     return this.request(url, query).then(res => res.json());
   }

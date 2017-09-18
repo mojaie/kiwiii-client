@@ -30,7 +30,7 @@ testCases.push({
   name: 'sqlTest1',
   testCase: () => {
     const query = {
-      workflow: 'search',
+      type: 'chemsearch',
       targets: ['sdf_demo:DRUGBANKFDA'],
       key: 'ID',
       values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
@@ -43,7 +43,7 @@ testCases.push({
   name: 'sqlTest2',
   testCase: () => {
     const query = {
-      workflow: 'filter',
+      type: 'filter',
       targets: [
         'text_demo:TEST1_LIB1',
         'text_demo:FREQHIT'
@@ -60,7 +60,7 @@ testCases.push({
   name: 'computeTest1',
   testCase: () => {
     const query = {
-      workflow: 'substr',
+      type: 'substr',
       targets: ['sdf_demo:DRUGBANKFDA'],
       format: 'dbid',
       querySource: 'sdf_demo:DRUGBANKFDA',
@@ -82,7 +82,7 @@ testCases.push({
   name: 'computeTest2',
   testCase: () => {
     const query = {
-      workflow: 'prop',
+      type: 'prop',
       targets: ['sdf_demo:DRUGBANKFDA'],
       key: '_mw',
       values: [1000],
