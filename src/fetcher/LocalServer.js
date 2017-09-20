@@ -56,8 +56,8 @@ export class LocalServerActivity extends Fetcher {
       .then(res => res.json())
       .then(json => {
         const mapping = {};
-        json.records.filter(row => row.hasOwnProperty(column.dataColumn))
-          .forEach(row => { mapping[row.ID] = row[column.dataColumn]; });
+        json.records
+          .forEach(row => { mapping[row.ID] = row[column.key]; });
         return {
           key: query.key,
           column: column,
@@ -140,7 +140,7 @@ export class LocalServerChemical extends LocalServerActivity {
   getRecords(query) {
     let url;
     if (query.hasOwnProperty('command')) {
-      url = 'rows';
+      url = 'jobres';
     } else if (query.hasOwnProperty('nodeTableId')) {
       url = 'graph';
     } else if (["search", "filter", "chemsearch", "chemfilter", "exact"].includes(query.type)) {
