@@ -31,8 +31,9 @@ testCases.push({
   testCase: () => {
     const query = {
       type: 'chemsearch',
-      targets: ['sdf_demo:DRUGBANKFDA'],
-      key: 'ID',
+      tables: ['DRUGBANKFDA'],
+      resourceFile: 'sdf_demo.sqlite3',
+      key: 'id',
       values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
     };
     return API.chemical.getRecords(query);
@@ -44,11 +45,9 @@ testCases.push({
   testCase: () => {
     const query = {
       type: 'filter',
-      targets: [
-        'text_demo:TEST1_LIB1',
-        'text_demo:FREQHIT'
-      ],
-      key: 'ID',
+      tables: ['TEST1_LIB1', 'FREQHIT'],
+      resourceFile: 'text_demo.sqlite3',
+      key: 'id',
       values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
       operator: 'in'
     };
@@ -61,10 +60,14 @@ testCases.push({
   testCase: () => {
     const query = {
       type: 'substr',
-      targets: ['sdf_demo:DRUGBANKFDA'],
-      format: 'dbid',
-      source: 'sdf_demo:DRUGBANKFDA',
-      value: 'DB00115',
+      tables: ['DRUGBANKFDA'],
+      resourceFile: 'sdf_demo.sqlite3',
+      queryMol: {
+        format: 'dbid',
+        table: 'DRUGBANKFDA',
+        resourceFile: 'sdf_demo.sqlite3',
+        value: 'DB00115'
+      },
       ignoreHs: true
     };
     return API.chemical.getRecords(query).then(res => {
@@ -83,7 +86,8 @@ testCases.push({
   testCase: () => {
     const query = {
       type: 'prop',
-      targets: ['sdf_demo:DRUGBANKFDA'],
+      tables: ['DRUGBANKFDA'],
+      resourceFile: 'sdf_demo.sqlite3',
       key: '_mw',
       values: [1000],
       operator: 'gt'
@@ -93,7 +97,7 @@ testCases.push({
         setTimeout(() => {
           const query = {id: res.id, command: 'abort'};
           API.chemical.getRecords(query).then(rows => r([res, rows]));
-        }, 5000);
+        }, 10000);
       });
     });
   }
@@ -104,7 +108,8 @@ testCases.push({
   testCase: () => {
     const query = {
       format: 'dbid',
-      source: 'sdf_demo:DRUGBANKFDA',
+      table: 'DRUGBANKFDA',
+      resourceFile: 'sdf_demo.sqlite3',
       value: 'DB00115'
     };
     return API.chemical.strprev(query)
