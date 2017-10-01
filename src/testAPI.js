@@ -68,7 +68,9 @@ testCases.push({
         resourceFile: 'sdf_demo.sqlite3',
         value: 'DB00115'
       },
-      ignoreHs: true
+      params: {
+        ignoreHs: true
+      }
     };
     return API.chemical.getRecords(query).then(res => {
       return new Promise(r => {
