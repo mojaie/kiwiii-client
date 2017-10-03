@@ -99,7 +99,7 @@ testCases.push({
         setTimeout(() => {
           const query = {id: res.id, command: 'abort'};
           API.chemical.getRecords(query).then(rows => r([res, rows]));
-        }, 10000);
+        }, 5000);
       });
     });
   }

@@ -28,7 +28,7 @@ export class LocalServerActivity extends Fetcher {
   }
 
   getRecords(queries) {
-    return this.request('search', queries)
+    return this.request('run', queries)
       .then(res => res.json());
   }
 
@@ -84,7 +84,7 @@ export class LocalServerActivity extends Fetcher {
   }
 
   exportSDFile(query) {
-    return this.request('exportsdf', query).then(res => res.text());
+    return this.request('sdfout', query).then(res => res.text());
   }
 
   reportPreview(query) {
@@ -140,19 +140,19 @@ export class LocalServerChemical extends LocalServerActivity {
   getRecords(query) {
     let url;
     if (query.hasOwnProperty('command')) {
-      url = 'jobres';
+      url = 'res';
     } else if (query.hasOwnProperty('nodeTableId')) {
-      url = 'graph';
+      url = 'simnet';
     } else if (["search", "filter", "chemsearch", "chemfilter", "exact"].includes(query.type)) {
-      url = 'search';
+      url = 'run';
     } else {
-      url = 'job';
+      url = 'async';
     }
     return this.request(url, query).then(res => res.json());
   }
 
   importSDF(query) {
-    return this.request('sdf', query)
+    return this.request('sdfin', query)
     .then(res => res.json())
     .then(json => {
       json.columns.forEach(col =>{
