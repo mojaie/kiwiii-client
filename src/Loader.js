@@ -1,7 +1,6 @@
 
 import {default as store} from './store/StoreConnection.js';
-
-const localServer = store.localChemInstance();
+import {default as fetcher} from './fetcher.js';
 
 
 function initialize() {
@@ -21,14 +20,14 @@ function initialize() {
   } else {
     console.info('Off-line mode is not supported');
   }
-  return localServer.status().then(server => {
+  return fetcher.getJSON('server').then(server => {
     store.setGlobalConfig('server', server);
     return store.getAppSetting('serverInstance').then(instance => {
       if (server.instance === instance) {
         console.info('Local resource schema is already up to date');
         return;
       }
-      return localServer.schema().then(schema => {
+      return fetcher.getJSON('schema').then(schema => {
         console.info(`Resource schema is updated to version <${server.instance}>`);
         return Promise.All([
           store.setAppSetting('serverInstance', server.instance),
@@ -54,7 +53,7 @@ function loader() {
       return Promise.resolve();
     }
   }
-  return fetch(`${localServer.baseURL}favicon.ico`)
+  return fetcher.getBlob('favicon.ico')
     .then(() => {
       // HTTP 404
       store.setGlobalConfig('onLine', true);

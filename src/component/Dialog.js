@@ -12,8 +12,7 @@ import {default as parser} from '../helper/parser.js';
 import {default as himg} from '../helper/image.js';
 import {default as store} from '../store/StoreConnection.js';
 import {default as cmp} from './Component.js';
-
-const localServer = store.localChemInstance();
+import {default as fetcher} from './fetcher.js';
 
 
 function pickDialog(rsrc, callback) {
@@ -34,7 +33,7 @@ function pickDialog(rsrc, callback) {
         values: d3form.textareaLines('#pick-queryarea'),
         operator: 'fm'
       };
-      return localServer.getRecords(query).then(callback);
+      return fetcher.getJSON('run', query).then(callback);
     });
 }
 
@@ -54,13 +53,13 @@ function propDialog(rsrc, callback) {
       d3.select('#loading-circle').style('display', 'inline');
       const selectedColumn = d3form.optionData('#prop-key');
       const query = {
-        method: selectedColumn.method,
+        method: 'chemprop',
         targets: d3form.checkboxValues('#prop-targets'),
         key: selectedColumn.key,
         values: d3form.textareaLines('#prop-queryarea'),
         operator: d3form.value('#prop-operator')
       };
-      return localServer.getRecords(query).then(callback);
+      return fetcher.getJSON('async', query).then(callback);
     });
 }
 
@@ -116,7 +115,7 @@ function structDialog(rsrc, callback) {
         value: fmt === 'molfile'
           ? d3form.value('#struct-queryarea') : d3form.textareaLines('#struct-queryarea')[0],
       };
-      return localServer.strprev(query)
+      return fetcher.getText('strprev', query)
         .then(res => d3.select('#struct-image').html(res));
     });
   d3.select('#struct-submit')
@@ -124,22 +123,29 @@ function structDialog(rsrc, callback) {
       d3.select('#loading-circle').style('display', 'inline');
       const mthdop = d3.select(d3.select('#struct-method').node().selectedOptions[0]);
       const fmt = d3form.value('#struct-format');
+      // TODO: table, resourceFile
       const query = {
         method: d3form.value('#struct-method'),
-        targets: d3form.checkboxValues('#struct-targets'),
-        format: fmt,
-        querySource: fmt === 'dbid' ? d3form.value('#struct-qsrc') : null,
-        value: fmt === 'molfile'
-          ? d3form.value('#struct-queryarea') : d3form.textareaLines('#struct-queryarea')[0],
-        thresholdType: d3form.value('#struct-thldtype'),
-        threshold: d3form.valueFloat('#struct-thld'),
-        ignoreHs: d3form.checked('#struct-ignoreh'),
-        diameter: mthdop.classed('gls') ? d3form.valueInt('#struct-diam') : null,
-        maxTreeSize: mthdop.classed('gls') ? d3form.valueInt('#struct-tree') : null,
-        molSizeCutoff: mthdop.classed('gls') ? d3form.valueInt('#struct-skip') : null,
-        timeout: mthdop.classed('rd') ? d3form.valueInt('#struct-timeout') : null
+        table: d3form.checkboxValues('#struct-targets'),
+        resourceFile: d3form.checkboxValues('#struct-targets'),
+        queryMol: {
+          format: fmt,
+          table: fmt === 'dbid' ? d3form.value('#struct-qsrc') : null,
+          resourceFile: fmt === 'dbid' ? d3form.value('#struct-qsrc') : null,
+          value: fmt === 'molfile'
+            ? d3form.value('#struct-queryarea') : d3form.textareaLines('#struct-queryarea')[0]
+        },
+        params: {
+          measure: d3form.value('#struct-thldtype'),
+          threshold: d3form.valueFloat('#struct-thld'),
+          ignoreHs: d3form.checked('#struct-ignoreh'),
+          diameter: mthdop.classed('gls') ? d3form.valueInt('#struct-diam') : null,
+          maxTreeSize: mthdop.classed('gls') ? d3form.valueInt('#struct-tree') : null,
+          molSizeCutoff: mthdop.classed('gls') ? d3form.valueInt('#struct-skip') : null,
+          timeout: mthdop.classed('rd') ? d3form.valueInt('#struct-timeout') : null
+        }
       };
-      return localServer.getRecords(query).then(callback);
+      return fetcher.getJSON('async', query).then(callback);
     });
 }
 
@@ -166,6 +172,7 @@ function sdfDialog(callback) {
   d3.select('#sdf-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
+      // TODO: formData query
       const query = {
         contents: d3form.firstFile('#sdf-file'),
         query: JSON.stringify({
@@ -174,7 +181,7 @@ function sdfDialog(callback) {
           recalc: d3form.checked('#sdf-recalc')
         })
       };
-      return localServer.importSDF(query).then(callback);
+      return fetcher.postFile('sdfin', formdata).then(callback);
     });
 }
 
@@ -355,11 +362,9 @@ function graphDialog(tbl, rcds, callback) {
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
       const mthdop = d3.select(d3.select('#graph-measure').node().selectedOptions[0]);
-      const query = {
+      // TODO: formdata
+      const params = {
         measure: d3form.value('#graph-measure'),
-        indices: [],
-        molecules: [],
-        nodeTableId: tbl.id,
         threshold: d3form.valueFloat('#graph-thld'),
         ignoreHs: d3form.checked('#graph-ignoreh'),
         diameter: mthdop.node().value === 'gls' ? d3form.valueInt('#graph-diam') : null,
@@ -367,11 +372,7 @@ function graphDialog(tbl, rcds, callback) {
         molSizeCutoff: mthdop.node().value === 'gls' ? d3form.valueInt('#graph-skip') : null,
         timeout: mthdop.classed('rd') ? d3form.valueInt('#graph-timeout') : null
       };
-      rcds.forEach(e => {
-        query.molecules.push(e._mol);
-        query.indices.push(e._index);
-      });
-      return localServer.getRecords(query).then(callback);
+      return fetcher.postFile('simnet', formdata).then(callback);
     });
 }
 

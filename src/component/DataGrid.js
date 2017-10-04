@@ -19,7 +19,7 @@ const defaultColumnHeight = {
 };
 
 
-function createDataGrid(selection, tbl) {
+function createDataGrid(selection, data) {
   // Header
   if (!selection.select('div.dg-header').size()) {
     selection.append('div').classed('dg-header', true);
@@ -29,7 +29,7 @@ function createDataGrid(selection, tbl) {
     selection.append('div').classed('dg-viewport', true)
       .append('div').classed('dg-body', true);
   }
-  const cols = tbl.columns
+  const cols = data.fields
     .filter(e => !e.hasOwnProperty('visible') || e.visible !== false)
     .map(e => {
       e.width = defaultColumnWidth[e.sort || 'numeric'];

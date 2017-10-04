@@ -1,64 +1,50 @@
 
 import d3 from 'd3';
-import {default as cmp} from './component/Component.js';
-import {LocalServerActivity, LocalServerChemical} from './fetcher/LocalServer.js';
-import {ScreenerFitting, ScreenerRawValue} from './fetcher/Screener.js';
-import {ScreenerFittingStub, ScreenerRawValueStub} from './fetcher/ScreenerTestStub.js';
 
-const API = {
-  chemical: new LocalServerChemical(),
-  activity: new LocalServerActivity(),
-  screenerrawvalue: new ScreenerRawValue(),
-  screenerfitting: new ScreenerFitting(),
-  screenerrawvaluestub: new ScreenerRawValueStub(),
-  screenerfittingstub: new ScreenerFittingStub()
-};
+import {default as cmp} from './component/Component.js';
+import {default as fetcher} from './fetcher.js';
+
 
 const testCases = [];
 
-testCases.push({
-  name: 'status',
-  testCase: () => API.chemical.status()
-});
+testCases.push(() =>
+  fetcher.getJSON('server')
+    .then(res => ({output: res, test: 'server'}))
+    .catch(err => ({output: err, test: 'server'}))
+);
 
-testCases.push({
-  name: 'resources',
-  testCase: () => API.chemical.getResources()
-});
+testCases.push(() =>
+  fetcher.getJSON('schema')
+    .then(res => ({output: res, test: 'schema'}))
+    .catch(err => ({output: err, test: 'schema'}))
+);
 
-testCases.push({
-  name: 'sqlTest1',
-  testCase: () => {
-    const query = {
-      type: 'chemsearch',
-      tables: ['DRUGBANKFDA'],
-      resourceFile: 'sdf_demo.sqlite3',
-      key: 'id',
-      values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
-    };
-    return API.chemical.getRecords(query);
-  }
-});
+testCases.push(() =>
+  fetcher.getJSON('run', {
+    type: 'chemsearch',
+    tables: ['DRUGBANKFDA'],
+    resourceFile: 'sdf_demo.sqlite3',
+    key: 'id',
+    values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
+  }).then(res => ({output: res, test: 'chemsearch'}))
+    .catch(err => ({output: err, test: 'chemsearch'}))
+);
 
-testCases.push({
-  name: 'sqlTest2',
-  testCase: () => {
-    const query = {
-      type: 'filter',
-      tables: ['TEST1_LIB1', 'FREQHIT'],
-      resourceFile: 'text_demo.sqlite3',
-      key: 'id',
-      values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
-      operator: 'in'
-    };
-    return API.activity.getRecords(query);
-  }
-});
+testCases.push(() =>
+  fetcher.getJSON('run', {
+    type: 'filter',
+    tables: ['TEST1_LIB1', 'FREQHIT'],
+    resourceFile: 'text_demo.sqlite3',
+    key: 'id',
+    values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
+    operator: 'in'
+  }).then(res => ({output: res, test: 'filter'}))
+    .catch(err => ({output: err, test: 'filter'}))
+);
 
-testCases.push({
-  name: 'computeTest1',
-  testCase: () => {
-    const query = {
+testCases.push(() =>
+  new Promise(r => {
+    fetcher.getJSON('async', {
       type: 'substr',
       tables: ['DRUGBANKFDA'],
       resourceFile: 'sdf_demo.sqlite3',
@@ -71,53 +57,48 @@ testCases.push({
       params: {
         ignoreHs: true
       }
-    };
-    return API.chemical.getRecords(query).then(res => {
-      return new Promise(r => {
-        setTimeout(() => {
-          const query = {id: res.id, command: 'abort'};
-          API.chemical.getRecords(query).then(rows => r([res, rows]));
-        }, 5000);
-      });
+    }).then(res => {
+      setTimeout(() => {
+        const query = {id: res.id, command: 'abort'};
+        fetcher.getJSON('res', query).then(rows => r([res, rows]));
+      }, 5000);
     });
-  }
-});
+  }).then(res => ({output: res, test: 'substr'}))
+    .catch(err => ({output: err, test: 'substr'}))
+);
 
-testCases.push({
-  name: 'computeTest2',
-  testCase: () => {
-    const query = {
-      type: 'prop',
+testCases.push(() =>
+  new Promise(r => {
+    fetcher.getJSON('async', {
+      type: 'chemprop',
       tables: ['DRUGBANKFDA'],
       resourceFile: 'sdf_demo.sqlite3',
       key: '_mw',
       values: [1000],
       operator: 'gt'
-    };
-    return API.chemical.getRecords(query).then(res => {
-      return new Promise(r => {
-        setTimeout(() => {
-          const query = {id: res.id, command: 'abort'};
-          API.chemical.getRecords(query).then(rows => r([res, rows]));
-        }, 5000);
-      });
+    }).then(res => {
+      setTimeout(() => {
+        const query = {id: res.id, command: 'abort'};
+        fetcher.getJSON('res', query).then(rows => r([res, rows]));
+      }, 5000);
     });
-  }
-});
+  }).then(res => ({output: res, test: 'prop'}))
+    .catch(err => ({output: err, test: 'prop'}))
+);
 
-testCases.push({
-  name: 'strprev',
-  testCase: () => {
-    const query = {
-      format: 'dbid',
-      table: 'DRUGBANKFDA',
-      resourceFile: 'sdf_demo.sqlite3',
-      value: 'DB00115'
-    };
-    return API.chemical.strprev(query)
-      .then(res => new DOMParser().parseFromString(res, "image/svg+xml"));
-  }
-});
+testCases.push(() =>
+  fetcher.getText('strprev', {
+    format: 'dbid',
+    table: 'DRUGBANKFDA',
+    resourceFile: 'sdf_demo.sqlite3',
+    value: 'DB00115'
+  }).then(res => (
+    {
+      output: new DOMParser().parseFromString(res, "image/svg+xml"),
+      test: 'strprev'
+    }
+  )).catch(err => ({output: err, test: 'strprev'}))
+);
 
 
 function run() {
@@ -129,17 +110,21 @@ function run() {
       records: []
   };
   d3.select('#test').call(cmp.createTable, tbl);
-  testCases.forEach(p => {
-    p.testCase().then(res => {
-      console.info(p.name);
-      console.info(res);
-      const row = [{'test': p.name, 'result': 'OK'}];
-      cmp.appendTableRows(d3.select('#test'), row, d => d.key);
-    }).catch(err => {
-      console.error(err);
-      const row = [{'test': p.name, 'result': '<span class="text-danger">NG<span>'}];
-      cmp.appendTableRows(d3.select('#test'), row, d => d.key);
-    });
-  });
+  testCases.reduce((ps, curr) => {
+    return () => ps()
+      .then(curr)
+      .then(res => {
+        console.info(res.test);
+        console.info(res.output);
+        const row = [{'test': res.test, 'result': 'OK'}];
+        cmp.appendTableRows(d3.select('#test'), row, d => d.key);
+      })
+      .catch(err => {
+        console.error(err.test);
+        console.error(err.output);
+        const row = [{'test': err.test, 'result': '<span class="text-danger">NG<span>'}];
+        cmp.appendTableRows(d3.select('#test'), row, d => d.key);
+      });
+  }, () => Promise.resolve())();
 }
 run();

@@ -7,6 +7,7 @@ import {default as d3form} from './helper/d3Form.js';
 import {default as d3scale} from './helper/d3Scale.js';
 import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
+import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as header} from './component/Header.js';
@@ -16,9 +17,6 @@ import {default as control} from './graph/GraphControlBox.js';
 import {default as component} from './graph/GraphComponent.js';
 import {default as interaction} from './graph/GraphInteraction.js';
 import {default as community} from './graph/communityDetection.js';
-
-
-const localServer = store.localChemInstance();
 
 
 function takeSnapshot() {
@@ -184,7 +182,7 @@ function fetch_(command) {
   return store.getCurrentTable().then(edges => {
     if (!def.fetchable(edges)) return;
     const query = {id: edges.id, command: command};
-    return localServer.getRecords(query).then(store.updateTable);
+    return fetcher.getJSON('res', query).then(store.updateTable);
   });
 }
 

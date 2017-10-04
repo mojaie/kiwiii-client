@@ -3,10 +3,9 @@ import d3 from 'd3';
 
 import {default as def} from './helper/definition.js';
 import {default as loader} from './Loader.js';
+import {default as fetcher} from './fetcher.js';
 import {default as cmp} from './component/Component.js';
 import {default as store} from './store/StoreConnection.js';
-
-const localServer = store.localChemInstance();
 
 
 function actionTable(selection, tbl) {
@@ -113,7 +112,7 @@ d3.select('#refresh-all')
       const tasks = tbls.map(tbl => {
         if (!def.fetchable(tbl)) return Promise.resolve();
         const query = {id: tbl.id, command: 'fetch'};
-        return localServer.getRecords(query).then(store.updateTable);
+        return fetcher.getJSON('res', query).then(store.updateTable);
       });
       return Promise.all(tasks);
     }).then(render);

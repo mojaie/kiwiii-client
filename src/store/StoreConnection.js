@@ -1,10 +1,6 @@
 
 import KArray from '../helper/KArray.js';
-import {default as def} from '../helper/definition.js';
 import {default as store} from './IDBStore.js';
-import {LocalServerActivity, LocalServerChemical} from '../fetcher/LocalServer.js';
-import {ScreenerFitting, ScreenerRawValue} from '../fetcher/Screener.js';
-import {ScreenerFittingStub, ScreenerRawValueStub} from '../fetcher/ScreenerTestStub.js';
 
 
 // Global config
@@ -42,51 +38,6 @@ function setAppSetting(key, value) {
 }
 
 
-// API instances
-
-const API = new Map(Object.entries({
-  chemical: new LocalServerChemical(),
-  activity: new LocalServerActivity(),
-  screenerrawvalue: new ScreenerRawValue(),
-  screenerfitting: new ScreenerFitting(),
-  screenerrawvaluestub: new ScreenerRawValueStub(),
-  screenerfittingstub: new ScreenerFittingStub()
-}));
-
-
-function localChemInstance() {
-  return API.get('chemical');
-}
-
-
-function getFetcher(domain) {
-  return API.get(domain);
-}
-
-
-function fetcherInstances() {
-  return Array.from(API.values());
-}
-
-
-function dataFetcherInstances() {
-  const res = [];
-  API.forEach((v, k) => {
-    if (k !== 'chemical') res.push(v);
-  });
-  return res;
-}
-
-
-function dataFetcherDomains() {
-  const res = [];
-  API.forEach((v, k) => {
-    if (k !== 'chemical') res.push(k);
-  });
-  return res;
-}
-
-
 // API data resource on local IndexedDB
 
 function getResources(domains) {
@@ -100,20 +51,6 @@ function setResources(rsrcs) {
   return store.putResources(rsrcs);
 }
 
-
-function getResourceColumns(domains) {
-  return getResources(domains).then(rsrcs => {
-    return KArray.from(rsrcs.map(rsrc => {
-      return rsrc.columns.map(col => {
-        col.domain = rsrc.domain;
-        col.key = def.dataSourceId(rsrc.domain, rsrc.id, col.key);
-        col.entity = rsrc.entity;
-        if (!col.hasOwnProperty('tags')) col.tags = rsrc.tags;
-        return col;
-      });
-    })).extend();
-  });
-}
 
 function resultColumns(data) {
   return getResources(data.dataSource).then(rsrcs => {
@@ -157,32 +94,32 @@ function getCurrentRecords() {
 }
 
 
-function setColumnsToShow(updates) {
+function setFieldsToShow(updates) {
   return store.updateItem(getGlobalConfig('urlQuery').id, item => {
-    item.columns.forEach((col, i) => {
-      col.visible = updates.visibles.includes(col.key);
-      col.sort = updates.sorts[i];
-      col.digit = updates.digits[i];
+    item.fields.forEach((fd, i) => {
+      fd.visible = updates.visibles.includes(fd.key);
+      fd.sort = updates.sorts[i];
+      fd.digit = updates.digits[i];
     });
   });
 }
 
 
-function joinColumn(mapping, tableId=globalConfig.urlQuery.id) {
-  const cols = mapping.hasOwnProperty('column') ? mapping.column : mapping.columns;
+function joinFields(mapping, tableId=globalConfig.urlQuery.id) {
+  const fds = mapping.hasOwnProperty('field') ? mapping.field : mapping.fields;
   return store.updateItem(tableId, item => {
     item.records
       .filter(rcd => mapping.mapping.hasOwnProperty(rcd[mapping.key]))
       .forEach(rcd => {
-        if (mapping.hasOwnProperty('column')) {
-          rcd[mapping.column.key] = mapping.mapping[rcd[mapping.key]];
+        if (mapping.hasOwnProperty('field')) {
+          rcd[mapping.field.key] = mapping.mapping[rcd[mapping.key]];
         } else {
-          mapping.columns.forEach((col, i) => {
-            rcd[col.key] = mapping.mapping[rcd[mapping.key]][i];
+          mapping.fields.forEach((fd, i) => {
+            rcd[fd.key] = mapping.mapping[rcd[mapping.key]][i];
           });
         }
       });
-    item.columns = KArray.from(item.columns).concat(cols).unique('key');
+    item.columns = KArray.from(item.columns).concat(fds).unique('key');
     item.lastUpdated = mapping.lastUpdated;
   });
 }
@@ -202,25 +139,15 @@ function insertTable(data) {
 
 function updateTable(data) {
   if (data === undefined) return Promise.resolve();  // No update
-  if (data.status === 'Failure') {  // No data found on server
-    return updateTableAttribute(data.id, 'status', 'Failure');
+  if (data.status === 'failure') {  // No data found on server
+    return updateTableAttribute(data.id, 'status', 'failure');
   }
   // update
   return store.updateItem(data.id, item => {
-    const update = {
-      responseDate: data.responseDate,
-      records: data.records,
-      columns: data.columns,
-      recordCount: data.recordCount,
-      searchDoneCount: data.searchDoneCount,
-      execTime: data.execTime,
-      progress: data.progress,
-      status: data.status,
-    };
+    Object.assign(item, data);
     if (data.hasOwnProperty('lastUpdated')) {
-      update.lastUpdated = data.lastUpdated;
+      item.lastUpdated = data.lastUpdated;
     }
-    Object.assign(item, update);
   });
 }
 
@@ -237,12 +164,10 @@ function reset() {
 
 export default {
   getAppSetting, setAppSetting, getGlobalConfig, setGlobalConfig,
-  localChemInstance, getFetcher, fetcherInstances,
-  dataFetcherInstances, dataFetcherDomains,
-  getResources, setResources, getResourceColumns, resultColumns,
+  getResources, setResources, resultColumns,
   getAllTables, getTablesByFormat, getTable, getRecords,
   getCurrentTable, getCurrentRecords,
-  setColumnsToShow, joinColumn,
+  setFieldsToShow, joinFields,
   updateTableAttribute, insertTable, updateTable,
   deleteTable, reset
 };

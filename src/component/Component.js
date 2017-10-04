@@ -36,7 +36,7 @@ function checkboxList(selection, data, name, key, text) {
 }
 
 
-function createTable(selection, tbl) {
+function createTable(selection, data) {
   // Header
   if (!selection.select('thead').size()) {
     selection.append('thead').append('tr');
@@ -45,7 +45,7 @@ function createTable(selection, tbl) {
   if (!selection.select('tbody').size()) {
     selection.append('tbody');
   }
-  const cols = tbl.columns
+  const cols = data.fields
     .filter(e => !e.hasOwnProperty('visible') || e.visible !== false
   );
   const header = selection.select('thead tr').selectAll('th')

@@ -4,6 +4,7 @@ import KArray from './helper/KArray.js';
 import {default as def} from './helper/definition.js';
 import {default as d3form} from './helper/d3Form.js';
 import {default as fmt} from './helper/formatValue.js';
+import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as cmp} from './component/Component.js';
@@ -11,16 +12,15 @@ import {default as cmp} from './component/Component.js';
 
 function updateChemicals(chemicals) {
   const compound = store.getGlobalConfig('urlQuery').compound;
-  const localServer = store.localChemInstance();
   const query = {
-    method: 'chemsql',
+    method: 'chemsearch',
     targets: chemicals.map(e => e.entity),
     key: 'ID',
     values: [compound],
     operator: 'fm'
   };
   // Chemical properties
-  const properties = localServer.getRecords(query).then(res => {
+  const properties = fetcher.getJSON('run', query).then(res => {
     const rcd = res.records[0];
     d3.select('#compoundid').html(rcd.ID);
     d3.select('#compounddb').html(chemicals.find(e => e.id === rcd.source).name);
@@ -60,7 +60,7 @@ function updateChemicals(chemicals) {
       ignoreHs: true,
       flush: true
     };
-    return localServer.getRecords(aliasQuery).then(res => {
+    return fetcher.getJSON('run', aliasQuery).then(res => {
       const rcds = res.records
         .filter(rcd => rcd.ID !== compound || rcd.source !== qrcd.source)
         .map(rcd => {

@@ -6,13 +6,12 @@ import d3 from 'd3';
 import {default as d3form} from './helper/d3Form.js';
 import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
+import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as dialog} from './component/Dialog.js';
 import {default as header} from './component/Header.js';
 import {default as grid} from './component/DataGrid.js';
-
-const localServer = store.localChemInstance();
 
 
 function idLink(rcds, idKey) {
@@ -73,13 +72,13 @@ function render() {
       d3.select('#excel')
         .on('click', () => {
           const query = {json: new Blob([JSON.stringify(tbl)])};
-          return localServer.exportExcel(query)
+          return fetcher.getBlob('xlsx', query)
             .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.xlsx`));
         });
       d3.select('#sdfile')
         .on('click', () => {
           const query = {json: new Blob([JSON.stringify(tbl)])};
-          return localServer.exportSDFile(query)
+          return fetcher.getText('sdfout', query)
             .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.sdf`));
         });
     }
@@ -99,8 +98,8 @@ function loadNewTable(data) {
 function fetch_(command) {
   return store.getCurrentTable().then(data => {
     if (!def.fetchable(data)) return;
-    const queries = {id: data.id, command: command};
-    return localServer.getRecords(queries)
+    const query = {id: data.id, command: command};
+    return fetcher.getJSON('res', query)
       .then(res => {
         return store.getDataSourceColumns(res.domain, res.dataSource)
           .then(cols => store.getFetcher(res.domain).formatResult(cols, res));
