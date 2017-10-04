@@ -52,13 +52,6 @@ function setResources(rsrcs) {
 }
 
 
-function resultColumns(data) {
-  return getResources(data.dataSource).then(rsrcs => {
-    return KArray.from(rsrcs.map(d => d.columns)).unique('key');
-  }).then(cols => store.getFetcher(data.domain).formatResult(cols, data));
-}
-
-
 // Datatable on local IndexedDB
 
 function getAllTables() {
@@ -94,7 +87,7 @@ function getCurrentRecords() {
 }
 
 
-function setFieldsToShow(updates) {
+function setFieldProperties(updates) {
   return store.updateItem(getGlobalConfig('urlQuery').id, item => {
     item.fields.forEach((fd, i) => {
       fd.visible = updates.visibles.includes(fd.key);
@@ -164,10 +157,10 @@ function reset() {
 
 export default {
   getAppSetting, setAppSetting, getGlobalConfig, setGlobalConfig,
-  getResources, setResources, resultColumns,
+  getResources, setResources,
   getAllTables, getTablesByFormat, getTable, getRecords,
   getCurrentTable, getCurrentRecords,
-  setFieldsToShow, joinFields,
+  setFieldProperties, joinFields,
   updateTableAttribute, insertTable, updateTable,
   deleteTable, reset
 };

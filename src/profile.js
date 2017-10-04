@@ -9,6 +9,13 @@ import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as cmp} from './component/Component.js';
 
+// TODO: getcompound query
+
+query = {
+  method: 'profile',
+  key: 'id',
+  value: 'hoge'
+};
 
 function updateChemicals(chemicals) {
   const compound = store.getGlobalConfig('urlQuery').compound;

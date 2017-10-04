@@ -43,6 +43,15 @@ testCases.push(() =>
 );
 
 testCases.push(() =>
+  fetcher.getJSON('run', {
+    type: 'profile',
+    key: 'id',
+    values: 'DB00189'
+  }).then(res => ({output: res, test: 'profile'}))
+    .catch(err => ({output: err, test: 'profile'}))
+);
+
+testCases.push(() =>
   new Promise(r => {
     fetcher.getJSON('async', {
       type: 'substr',

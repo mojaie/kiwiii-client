@@ -25,7 +25,7 @@ function idLink(rcds, idKey) {
 function renderTableContents(tbl) {
   return store.getCurrentRecords().then(rcds => {
     const copied = JSON.parse(JSON.stringify(rcds));  // deep copy
-    idLink(copied, 'ID');
+    idLink(copied, 'id');
     d3.select('#datatable')
       .call(grid.createDataGrid, tbl)
       .call(grid.dataGridRecords, copied, d => d._index)
