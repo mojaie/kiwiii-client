@@ -45,10 +45,23 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.getJSON('run', {
     type: 'profile',
-    key: 'id',
-    values: 'DB00189'
+    id: 'DB00189'
   }).then(res => ({output: res, test: 'profile'}))
     .catch(err => ({output: err, test: 'profile'}))
+);
+
+testCases.push(() =>
+  fetcher.getText('strprev', {
+    format: 'dbid',
+    table: 'DRUGBANKFDA',
+    resourceFile: 'sdf_demo.sqlite3',
+    value: 'DB00115'
+  }).then(res => (
+    {
+      output: new DOMParser().parseFromString(res, "image/svg+xml"),
+      test: 'strprev'
+    }
+  )).catch(err => ({output: err, test: 'strprev'}))
 );
 
 testCases.push(() =>
@@ -95,24 +108,10 @@ testCases.push(() =>
     .catch(err => ({output: err, test: 'prop'}))
 );
 
-testCases.push(() =>
-  fetcher.getText('strprev', {
-    format: 'dbid',
-    table: 'DRUGBANKFDA',
-    resourceFile: 'sdf_demo.sqlite3',
-    value: 'DB00115'
-  }).then(res => (
-    {
-      output: new DOMParser().parseFromString(res, "image/svg+xml"),
-      test: 'strprev'
-    }
-  )).catch(err => ({output: err, test: 'strprev'}))
-);
-
 
 function run() {
   const tbl = {
-      columns: [
+      fields: [
         {key: 'test', sort: 'text', visible: true},
         {key: 'result', sort: 'text', visible: true}
       ],

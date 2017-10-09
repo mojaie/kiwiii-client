@@ -12,7 +12,7 @@ import {default as parser} from '../helper/parser.js';
 import {default as himg} from '../helper/image.js';
 import {default as store} from '../store/StoreConnection.js';
 import {default as cmp} from './Component.js';
-import {default as fetcher} from './fetcher.js';
+import {default as fetcher} from '../fetcher.js';
 
 
 function pickDialog(rsrc, callback) {
