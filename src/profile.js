@@ -9,25 +9,17 @@ import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as cmp} from './component/Component.js';
 
-// TODO: getcompound query
-
-query = {
-  method: 'profile',
-  key: 'id',
-  value: 'hoge'
-};
 
 function updateChemicals(chemicals) {
   const compound = store.getGlobalConfig('urlQuery').compound;
-  const query = {
-    method: 'chemsearch',
-    targets: chemicals.map(e => e.entity),
+  const propQuery = {
+    type: 'chemsearch',
+    resources: 'sdf_demo.sqlite3',
     key: 'ID',
-    values: [compound],
-    operator: 'fm'
+    values: [compound]
   };
   // Chemical properties
-  const properties = fetcher.getJSON('run', query).then(res => {
+  const properties = fetcher.getJSON('run', propQuery).then(res => {
     const rcd = res.records[0];
     d3.select('#compoundid').html(rcd.ID);
     d3.select('#compounddb').html(chemicals.find(e => e.id === rcd.source).name);
@@ -38,17 +30,12 @@ function updateChemicals(chemicals) {
           {key: 'value', sort: 'text', visible: true}
         ]
     };
-    // Convert the record into key-value table
-    store.getDataSourceColumns(res.domain, [rcd.source])
-      .then(cols => store.getFetcher(res.domain).formatResult(cols, res))
-      .then(data => {
-        const rcds = data.columns
-          .filter(e => !['_structure', '_index', 'ID'].includes(e.key))
-          .map(e => ({ key: e.name, value: rcd[e.key] }));
-        d3.select('#properties').call(cmp.createTable, props)
-          .call(cmp.updateTableRecords, rcds, d => d.key);
-      });
-    return rcd;
+    props.records = res.columns
+      .filter(e => !['_structure', '_index', 'ID'].includes(e.key))
+      .map(e => ({ key: e.name, value: rcd[e.key] }));
+    d3.select('#properties').call(cmp.createTable, props)
+      .call(cmp.updateTableRecords, props.records, d => d.key);
+    return props.records;
   });
   // Compound structure alias
   properties.then(qrcd => {
@@ -61,11 +48,12 @@ function updateChemicals(chemicals) {
     const aliasQuery = {
       method: 'exact',
       targets: chemicals.map(e => e.entity),
-      format: 'dbid',
-      querySource: chemicals.find(e => e.id === qrcd.source).entity,
-      value: compound,
-      ignoreHs: true,
-      flush: true
+      queryMol: {
+        format: 'dbid',
+        source: chemicals.find(e => e.id === qrcd.source).entity,
+        value: compound
+      },
+      params: {ignoreHs: true}
     };
     return fetcher.getJSON('run', aliasQuery).then(res => {
       const rcds = res.records
@@ -108,6 +96,12 @@ function updateActivities(activities) {
   });
   d3.select('#results').call(cmp.createTable, tbl)
     .call(cmp.addSort);
+    const propQuery = {
+      method: 'chemsearch',
+      targets: chemicals.map(e => e.entity),
+      key: 'ID',
+      values: [compound]
+    };
   const tasks = store.dataFetcherInstances()
     .filter(fetcher => fetcher.available === true)
     .map(fetcher => {

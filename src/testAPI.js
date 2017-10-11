@@ -22,8 +22,7 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.getJSON('run', {
     type: 'chemsearch',
-    tables: ['DRUGBANKFDA'],
-    resourceFile: 'sdf_demo.sqlite3',
+    targets: ['drugbankfda'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
   }).then(res => ({output: res, test: 'chemsearch'}))
@@ -33,8 +32,7 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.getJSON('run', {
     type: 'filter',
-    tables: ['TEST1_LIB1', 'FREQHIT'],
-    resourceFile: 'text_demo.sqlite3',
+    targets: ['test1hits', 'freqhits'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
     operator: 'in'
@@ -53,8 +51,7 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.getText('strprev', {
     format: 'dbid',
-    table: 'DRUGBANKFDA',
-    resourceFile: 'sdf_demo.sqlite3',
+    source: 'drugbankfda',
     value: 'DB00115'
   }).then(res => (
     {
@@ -68,12 +65,10 @@ testCases.push(() =>
   new Promise(r => {
     fetcher.getJSON('async', {
       type: 'substr',
-      tables: ['DRUGBANKFDA'],
-      resourceFile: 'sdf_demo.sqlite3',
+      targets: ['drugbankfda'],
       queryMol: {
         format: 'dbid',
-        table: 'DRUGBANKFDA',
-        resourceFile: 'sdf_demo.sqlite3',
+        source: 'drugbankfda',
         value: 'DB00115'
       },
       params: {
@@ -93,8 +88,7 @@ testCases.push(() =>
   new Promise(r => {
     fetcher.getJSON('async', {
       type: 'chemprop',
-      tables: ['DRUGBANKFDA'],
-      resourceFile: 'sdf_demo.sqlite3',
+      targets: ['drugbankfda'],
       key: '_mw',
       values: [1000],
       operator: 'gt'
