@@ -40,10 +40,8 @@ function setAppSetting(key, value) {
 
 // API data resource on local IndexedDB
 
-function getResources(domains) {
-  return store.getResources().then(rsrcs => {
-    return rsrcs.filter(e => domains.includes(e.domain));
-  });
+function getResources() {
+  return store.getResources();
 }
 
 

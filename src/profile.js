@@ -1,7 +1,5 @@
 
 import d3 from 'd3';
-import KArray from './helper/KArray.js';
-import {default as def} from './helper/definition.js';
 import {default as d3form} from './helper/d3Form.js';
 import {default as fmt} from './helper/formatValue.js';
 import {default as fetcher} from './fetcher.js';
@@ -10,77 +8,68 @@ import {default as store} from './store/StoreConnection.js';
 import {default as cmp} from './component/Component.js';
 
 
-function updateChemicals(chemicals) {
+function updateChem(resources) {
   const compound = store.getGlobalConfig('urlQuery').compound;
-  const propQuery = {
+  const query = {
     type: 'chemsearch',
-    resources: 'sdf_demo.sqlite3',
-    key: 'ID',
+    targets: resources.filter(e => e.domain === 'chemical').map(e => e.id),
+    key: 'id',
     values: [compound]
   };
-  // Chemical properties
-  const properties = fetcher.getJSON('run', propQuery).then(res => {
+  return fetcher.getJSON('run', query).then(res => {
     const rcd = res.records[0];
-    d3.select('#compoundid').html(rcd.ID);
-    d3.select('#compounddb').html(chemicals.find(e => e.id === rcd.source).name);
+    d3.select('#compoundid').html(rcd.id);
+    d3.select('#compounddb').html(resources.find(e => e.id === rcd.source).name);
     d3.select('#structure').html(rcd._structure);
-    const props = {
-        columns: [
-          {key: 'key', sort: 'text', visible: true},
-          {key: 'value', sort: 'text', visible: true}
-        ]
-    };
-    props.records = res.columns
-      .filter(e => !['_structure', '_index', 'ID'].includes(e.key))
+    const records = res.fields
+      .filter(e => !['_structure', '_index', 'id'].includes(e.key))
       .map(e => ({ key: e.name, value: rcd[e.key] }));
-    d3.select('#properties').call(cmp.createTable, props)
-      .call(cmp.updateTableRecords, props.records, d => d.key);
-    return props.records;
-  });
-  // Compound structure alias
-  properties.then(qrcd => {
-    const aliases = {
-        columns: [
-          {key: 'ID', sort: 'text', visible: true},
-          {key: 'database', sort: 'text', visible: true}
-        ]
+    const data = {
+      fields: [
+        {key: 'key', sort: 'text', visible: true},
+        {key: 'value', sort: 'text', visible: true}
+      ]
     };
-    const aliasQuery = {
-      method: 'exact',
-      targets: chemicals.map(e => e.entity),
-      queryMol: {
-        format: 'dbid',
-        source: chemicals.find(e => e.id === qrcd.source).entity,
-        value: compound
-      },
-      params: {ignoreHs: true}
-    };
-    return fetcher.getJSON('run', aliasQuery).then(res => {
-      const rcds = res.records
-        .filter(rcd => rcd.ID !== compound || rcd.source !== qrcd.source)
-        .map(rcd => {
-        return {
-          ID: `<a href="profile.html?compound=${rcd.ID}" target="_blank">${rcd.ID}</a>`,
-          database: chemicals.find(e => e.id === rcd.source).name
-        };
-      });
-      d3.select('#aliases').call(cmp.createTable, aliases)
-        .call(cmp.updateTableRecords, rcds, d => d.ID);
-      return;
-    });
+    d3.select('#properties').call(cmp.createTable, data)
+      .call(cmp.updateTableRecords, records, d => d.key);
+    return rcd;
   });
 }
 
-function updateActivities(activities) {
-  const tbl = {
-    columns: [
-      {key: 'name', sort: 'text', visible: true},
-      {key: 'tags', sort: 'text', visible: true},
-      {key: 'valueType', sort: 'text', visible: true},
-      {key: 'value', sort: 'numeric', visible: true, valueType: 'AC50'},
-      {key: 'remarks', sort: 'none', visible: true}
-    ]
+
+function updateChemAliases(resources, qrcd) {
+  const query = {
+    type: 'exact',
+    targets: resources.filter(e => e.domain === 'chemical').map(e => e.id),
+    queryMol: {
+      format: 'dbid',
+      source: qrcd.source,
+      value: qrcd.id
+    },
+    params: {ignoreHs: true}
   };
+  return fetcher.getJSON('run', query).then(res => {
+    const records = res.records
+      .filter(rcd => rcd.id !== qrcd.id || rcd.source !== qrcd.source)
+      .map(rcd => {
+        return {
+          id: `<a href="profile.html?compound=${rcd.id}" target="_blank">${rcd.id}</a>`,
+          database: resources.find(e => e.id === rcd.source).name
+        };
+      });
+    const data = {
+      fields: [
+        {key: 'id', sort: 'text', visible: true},
+        {key: 'database', sort: 'text', visible: true}
+      ]
+    };
+    d3.select('#aliases').call(cmp.createTable, data)
+      .call(cmp.updateTableRecords, records, d => d.id);
+  });
+}
+
+
+function updateActivities(resources) {
   const compound = store.getGlobalConfig('urlQuery').compound;
   // Prevent implicit submission
   document.getElementById('search')
@@ -94,14 +83,27 @@ function updateActivities(activities) {
       .style('visibility', d => match(d) ? null : 'hidden')
       .style('position', d => match(d) ? null : 'absolute');
   });
-  d3.select('#results').call(cmp.createTable, tbl)
-    .call(cmp.addSort);
-    const propQuery = {
-      method: 'chemsearch',
-      targets: chemicals.map(e => e.entity),
-      key: 'ID',
-      values: [compound]
+  /*d3.select('#results').call(cmp.createTable, tbl)
+    .call(cmp.addSort);*/
+  const query = {
+    type: 'profile',
+    id: compound
+  };
+  return fetcher.getJSON('run', query).then(res => {
+    const table = {
+      fields: [
+        {key: 'name', sort: 'text', visible: true},
+        {key: 'tags', sort: 'text', visible: true},
+        {key: 'valueType', sort: 'text', visible: true},
+        {key: 'value', sort: 'numeric', visible: true, valueType: 'AC50'},
+        {key: 'remarks', sort: 'none', visible: true}
+      ]
     };
+    d3.select('#results').call(cmp.createTable, table)
+      .call(cmp.updateTableRecords, res.records, d => d.id);
+  });
+
+  /*
   const tasks = store.dataFetcherInstances()
     .filter(fetcher => fetcher.available === true)
     .map(fetcher => {
@@ -127,16 +129,20 @@ function updateActivities(activities) {
       });
     });
   return Promise.all(tasks);
+  */
 }
 
 
 function run() {
-  const domains = store.dataFetcherDomains();
-  return loader.loader().then(() => {
-    return Promise.all([
-      store.getResources('chemical').then(updateChemicals),
-      store.getResourceColumns(domains).then(updateActivities)
-    ]);
-  });
+  return loader.loader()
+    .then(() => store.getResources())
+    .then(rsrcs => Promise.all([
+      updateChem(rsrcs).then(qrcd => updateChemAliases(rsrcs, qrcd)),
+      updateActivities(rsrcs)
+    ]));
 }
-run();
+
+
+export default {
+  run
+};

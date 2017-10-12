@@ -131,21 +131,24 @@ function run() {
       const file = document.getElementById('select-file').files[0];
       hfile.loadJSON(file).then(loadNewTable);
     });
+  // location parameter enables direct access to datatable JSON via HTTP
   if (store.getGlobalConfig('urlQuery').hasOwnProperty('location')) {
     const url = store.getGlobalConfig('urlQuery').location;
     return hfile.fetchJSON(url)
-      .then(tbl => store.insertTable(tbl).then(() => tbl.id))
+      .then(data => store.insertTable(data).then(() => data.id))
       .then(id => {
         window.location = `datatable.html?id=${id}`;
       });
   }
   return loader.loader().then(() => {
+    // Disable fetch commands when it is offline
     if (!store.getGlobalConfig('onLine')) {
       d3.selectAll('.online-command')
         .style('color', '#cccccc')
         .classed('disabled', true)
         .on('click', () => d3.event.stopPropagation());
     }
+    // Loading tables
     if (store.getGlobalConfig('urlQuery').hasOwnProperty('id')) {
       header.initializeWithData();
       return fetch_('update').then(render);
@@ -153,13 +156,8 @@ function run() {
       header.initialize();
       dialog.sdfDialog(loadNewTable);
       if (!store.getGlobalConfig('onLine')) return Promise.resolve();
-      return store.getResources('chemical').then(rsrc => {
-        dialog.pickDialog(rsrc, res => {
-          return store.resultColumns(res).then(cols => {
-            res.columns = cols;
-            return loadNewTable(res);
-          });
-        });
+      return store.getResources().then(rsrc => {
+        dialog.pickDialog(rsrc, loadNewTable);
         dialog.structDialog(rsrc, loadNewTable);
         dialog.propDialog(rsrc, loadNewTable);
       });

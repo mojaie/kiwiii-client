@@ -11,7 +11,6 @@ function renderStatus(tbl, refresh_callback, abort_callback) {
   d3.select('title').text(tbl.name);
   d3.select('#title').text(tbl.name);
   d3.select('#refresh')
-    .text(tbl.status === 'Aborting' ? 'Abort requested' : 'Refresh')
     .style('display', def.fetchable(tbl) ? 'inline-block' : 'none');
   d3.select('#abort')
     .style('display', def.abortRequestable(tbl) ? 'inline-block' : 'none');
@@ -21,8 +20,8 @@ function renderStatus(tbl, refresh_callback, abort_callback) {
   };
   const dtx = doneText[tbl.format];
   d3.select('#progress')
-    .text(`(${tbl.status} - ${tbl.recordCount} ${dtx} in ${tbl.execTime} sec.)`);
-  if (tbl.status === 'In progress') {
+    .text(`(${tbl.status} - ${tbl.resultCount} ${dtx} in ${tbl.execTime} sec.)`);
+  if (tbl.status === 'running') {
     d3.select('#progress').append('div').append('progress')
       .attr('max', 100)
       .attr('value', tbl.progress)
@@ -36,9 +35,7 @@ function renderStatus(tbl, refresh_callback, abort_callback) {
       d3.select('#confirm-submit')
         .classed('btn-primary', false)
         .classed('btn-warning', true)
-        .on('click', () => {
-          abort_callback();
-        });
+        .on('click', abort_callback);
     });
   console.info('Query');
   console.info(tbl.query);  // query datails are available on browser console.

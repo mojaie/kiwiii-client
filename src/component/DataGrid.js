@@ -32,8 +32,8 @@ function createDataGrid(selection, data) {
   const cols = data.fields
     .filter(e => !e.hasOwnProperty('visible') || e.visible !== false)
     .map(e => {
-      e.width = defaultColumnWidth[e.sort || 'numeric'];
-      e.height = defaultColumnHeight[e.sort || 'numeric'];
+      e.width = defaultColumnWidth[e.sortType || 'numeric'];
+      e.height = defaultColumnHeight[e.sortType || 'numeric'];
       return e;
     });
   const rowSize = {
@@ -143,7 +143,7 @@ function dataGridRecords(selection, rcds, keyFunc) {
 
 function addSort(selection, rcds, keyFunc) {
   selection.select('.dg-header').selectAll('.dg-hcell')
-    .filter(d => d.sort !== 'none')
+    .filter(d => d.sortType !== 'none')
     .append('span').append('a')
       .attr('id', d => `sort-${d.key}`)
       .text('^v')
@@ -153,7 +153,7 @@ function addSort(selection, rcds, keyFunc) {
     .on('click', d => {
       const isAsc = d3.select(`#sort-${d.key}`).text() === 'v';
       d3.select(`#sort-${d.key}`).text(isAsc ? '^' : 'v');
-      const isNum = !d.hasOwnProperty('sort') || d.sort === 'numeric';
+      const isNum = !d.hasOwnProperty('sortType') || d.sortType === 'numeric';
       const cmp = isAsc
         ? (isNum ? fmt.numericAsc : fmt.textAsc)
         : (isNum ? fmt.numericDesc : fmt.textDesc);

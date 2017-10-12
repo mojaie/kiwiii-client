@@ -53,7 +53,7 @@ function createTable(selection, data) {
   header.exit().remove();
   header.enter().append('th')
     .merge(header)
-      .text(d => d.hasOwnProperty('name') ? d.name : d.key);
+      .text(d => d.name || d.key);
 }
 
 
@@ -91,7 +91,7 @@ function appendTableRows(selection, rcds, keyFunc) {
 
 function addSort(selection) {
   selection.select('thead tr').selectAll('th')
-    .filter(d => d.sort !== 'none')
+    .filter(d => d.sortType !== 'none')
     .append('span').append('a')
       .attr('id', d => `sort-${d.key}`)
       .text('^v')
@@ -100,7 +100,7 @@ function addSort(selection) {
       .style('text-align', 'center')
     .on('click', d => {
       const isAsc = d3.select(`#sort-${d.key}`).text() === 'v';
-      const isNum = !d.hasOwnProperty('sort') || d.sort === 'numeric';
+      const isNum = !d.hasOwnProperty('sortType') || d.sortType === 'numeric';
       const cmp = isAsc
         ? (isNum ? fmt.numericAsc : fmt.textAsc)
         : (isNum ? fmt.numericDesc : fmt.textDesc);

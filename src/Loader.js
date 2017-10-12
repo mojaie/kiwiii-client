@@ -32,7 +32,8 @@ function initialize() {
         return Promise.All([
           store.setAppSetting('serverInstance', server.instance),
           store.setResources(schema.resources),
-          store.setAppSetting('templates', schema.templates)
+          store.setAppSetting('templates', schema.templates),
+          store.setAppSetting('rdkit', schema.rdkit)
         ]);
       });
     });

@@ -9,14 +9,14 @@ const testCases = [];
 
 testCases.push(() =>
   fetcher.getJSON('server')
-    .then(res => ({output: res, test: 'server'}))
-    .catch(err => ({output: err, test: 'server'}))
+    .then(res => ({output: res, test: 'server', pass: true}))
+    .catch(err => ({output: err, test: 'server', pass: false}))
 );
 
 testCases.push(() =>
   fetcher.getJSON('schema')
-    .then(res => ({output: res, test: 'schema'}))
-    .catch(err => ({output: err, test: 'schema'}))
+    .then(res => ({output: res, test: 'schema', pass: true}))
+    .catch(err => ({output: err, test: 'schema', pass: false}))
 );
 
 testCases.push(() =>
@@ -25,27 +25,27 @@ testCases.push(() =>
     targets: ['drugbankfda'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
-  }).then(res => ({output: res, test: 'chemsearch'}))
-    .catch(err => ({output: err, test: 'chemsearch'}))
+  }).then(res => ({output: res, test: 'chemsearch', pass: true}))
+    .catch(err => ({output: err, test: 'chemsearch', pass: false}))
 );
 
 testCases.push(() =>
   fetcher.getJSON('run', {
     type: 'filter',
-    targets: ['test1hits', 'freqhits'],
+    targets: ['test1', 'test1_2', 'freqhit'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
     operator: 'in'
-  }).then(res => ({output: res, test: 'filter'}))
-    .catch(err => ({output: err, test: 'filter'}))
+  }).then(res => ({output: res, test: 'filter', pass: true}))
+    .catch(err => ({output: err, test: 'filter', pass: false}))
 );
 
 testCases.push(() =>
   fetcher.getJSON('run', {
     type: 'profile',
     id: 'DB00189'
-  }).then(res => ({output: res, test: 'profile'}))
-    .catch(err => ({output: err, test: 'profile'}))
+  }).then(res => ({output: res, test: 'profile', pass: true}))
+    .catch(err => ({output: err, test: 'profile', pass: false}))
 );
 
 testCases.push(() =>
@@ -56,9 +56,9 @@ testCases.push(() =>
   }).then(res => (
     {
       output: new DOMParser().parseFromString(res, "image/svg+xml"),
-      test: 'strprev'
+      test: 'strprev', pass: true
     }
-  )).catch(err => ({output: err, test: 'strprev'}))
+  )).catch(err => ({output: err, test: 'strprev', pass: false}))
 );
 
 testCases.push(() =>
@@ -78,10 +78,10 @@ testCases.push(() =>
       setTimeout(() => {
         const query = {id: res.id, command: 'abort'};
         fetcher.getJSON('res', query).then(rows => r([res, rows]));
-      }, 5000);
+      }, 2000);
     });
-  }).then(res => ({output: res, test: 'substr'}))
-    .catch(err => ({output: err, test: 'substr'}))
+  }).then(res => ({output: res, test: 'substr', pass: true}))
+    .catch(err => ({output: err, test: 'substr', pass: false}))
 );
 
 testCases.push(() =>
@@ -96,10 +96,10 @@ testCases.push(() =>
       setTimeout(() => {
         const query = {id: res.id, command: 'abort'};
         fetcher.getJSON('res', query).then(rows => r([res, rows]));
-      }, 5000);
+      }, 2000);
     });
-  }).then(res => ({output: res, test: 'prop'}))
-    .catch(err => ({output: err, test: 'prop'}))
+  }).then(res => ({output: res, test: 'prop', pass: true}))
+    .catch(err => ({output: err, test: 'prop', pass: false}))
 );
 
 
@@ -118,15 +118,11 @@ function run() {
       .then(res => {
         console.info(res.test);
         console.info(res.output);
-        const row = [{'test': res.test, 'result': 'OK'}];
+        const pass = res.pass ? 'OK' : '<span class="text-danger">NG<span>';
+        const row = [{'test': res.test, 'result': pass}];
         cmp.appendTableRows(d3.select('#test'), row, d => d.key);
       })
-      .catch(err => {
-        console.error(err.test);
-        console.error(err.output);
-        const row = [{'test': err.test, 'result': '<span class="text-danger">NG<span>'}];
-        cmp.appendTableRows(d3.select('#test'), row, d => d.key);
-      });
+      ;
   }, () => Promise.resolve())();
 }
 run();
