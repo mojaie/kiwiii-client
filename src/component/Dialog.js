@@ -21,8 +21,8 @@ function pickDialog(rsrc, callback) {
     .on('change', function () {
       const rsrctbl = d3form.optionData(this);
       d3.select('#pick-queryarea').text(rsrctbl.placeholders.ID);
-    });
-  d3.select('#pick-queryarea').text(rsrc[0].placeholders.ID);  // initial value
+    })
+    .dispatch('change');
   d3.select('#pick-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
@@ -50,11 +50,10 @@ function propDialog(rsrc, callback) {
   d3.select('#prop-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
-      const selectedfield = d3form.optionData('#prop-key');
       const query = {
         type: 'chemprop',
         targets: d3form.checkboxValues('#prop-targets'),
-        key: selectedfield.key,
+        key: d3form.optionData('#prop-key').key,
         values: d3form.textareaLines('#prop-queryarea'),
         operator: d3form.value('#prop-operator')
       };
@@ -180,55 +179,46 @@ function sdfDialog(callback) {
 
 
 function columnDialog(data, callback) {
-  // TODO: need refactoring
-  const coltbl = {
+  const table = {
     fields: [
       {key: 'name', sortType: 'text', visible: true},
-      {key: 'visible', sortType: 'text', visible: true},
-      {key: 'sort', sortType: 'text', visible: true},
-      {key: 'digit', sortType: 'numeric', visible: true}
+      {key: 'visible', sortType: 'none', valueType: 'control', visible: true},
+      {key: 'sort', sortType: 'none', valueType: 'control', visible: true},
+      {key: 'digit', sortType: 'none', valueType: 'control', visible: true}
     ]
   };
-  d3.select('#column-table thead').remove();
-  d3.select('#column-table tbody').remove();
-  d3.select('#column-table').call(cmp.createTable, coltbl)
-    .select('tbody').selectAll('tr')
-    .data(data.fields).enter().append('tr')
-    .each(function (row) {
-      d3.select(this).selectAll('td')
-        .data(d => coltbl.fields.map(e => d[e.key])).enter().append('td')
-        .each(function (cell, i) {
-          if (i === 0) {
-            d3.select(this).text(d => d);
-          } else if (i === 1) {
-            d3.select(this).classed('column-vis-select', true)
-              .append('input')
-                .attr('type', 'checkbox')
-                .attr('value', row.key)
-                .property('checked', d => d);
-          } else if (i === 2) {
-            d3.select(this).classed('column-sort-select', true)
-              .append('select')
-              .call(cmp.selectOptions,
-                    cell === 'none' ? ['none'] : ['numeric', 'text'], null, d => d)
-              .each(function (value) {
-                d3.select(this).selectAll('option')
-                  .property('selected', d => d === value);
-              });
-          } else if (i === 3) {
-            d3.select(this).classed('column-digit-select', true)
-              .append('select')
-              .call(cmp.selectOptions, ['raw', 'rounded', 'scientific', 'si'], null, d => d)
-              .each(function (value) {
-                d3.select(this).selectAll('option')
-                  .property('selected', d => d === value);
-              });
-            if (row.sortType !== 'numeric') {
-              d3.select(this).select('select').attr('disabled', 'disabled');
-            }
-          }
-        });
-    });
+  const records = data.fields.map(e => {
+    return {
+      key: e.key,
+      name: e.name,
+      visible: selection => {
+        selection.classed('column-vis-select', true)
+          .append('input')
+            .attr('type', 'checkbox')
+            .attr('value', e.key)
+            .property('checked', e.visible);
+      },
+      sort: selection => selection.classed('column-sort-select', true)
+        .append('select')
+        .call(cmp.selectOptions,
+              e.sortType === 'none' ? ['none'] : ['numeric', 'text'], null, d => d)
+        .each(function (value) {
+          d3.select(this).selectAll('option')
+            .property('selected', d => d === value);
+        }),
+      digit: selection => selection.classed('column-digit-select', true)
+        .append('select')
+        .call(cmp.selectOptions, ['raw', 'rounded', 'scientific', 'si'], null, d => d)
+        .attr('disabled', e.sortType === 'numeric' ? null : 'disabled')
+        .each(function (value) {
+          d3.select(this).selectAll('option')
+            .property('selected', d => d === value);
+        })
+    };
+  });
+  d3.select('#column-table')
+    .call(cmp.createTable, table)
+    .call(cmp.updateTableRecords, records, d => d.key);
   d3.select('#column-table tbody').selectAll('tr')
     .on('change', function () {
         const sort = d3.select(this).select('.column-sort-select select').node().value;

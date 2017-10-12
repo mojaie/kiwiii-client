@@ -38,13 +38,12 @@ function checkboxList(selection, data, name, key, text) {
 
 function createTable(selection, data) {
   // Header
-  if (!selection.select('thead').size()) {
-    selection.append('thead').append('tr');
-  }
+  if (selection.select('thead').size()) selection.select('thead').remove();
+  selection.append('thead').append('tr');
   // Records
-  if (!selection.select('tbody').size()) {
+  if (selection.select('tbody').size()) selection.select('tbody').remove();
     selection.append('tbody');
-  }
+
   const cols = data.fields
     .filter(e => !e.hasOwnProperty('visible') || e.visible !== false
   );
@@ -70,10 +69,14 @@ function updateTableRecords(selection, rcds, keyFunc) {
   rowEntered.merge(rowSelection)
     .selectAll('td')
     .classed('align-middle', true)
-    .html((d, i) => {
+    .html(function (d, i) {
       if (d === undefined) return '';
       if (header[i].valueType === 'plot') return '[plot]';
       if (header[i].valueType === 'image') return '[image]';
+      if (header[i].valueType === 'control') {
+        d3.select(this).call(d);
+        return;
+      }
       if (header[i].hasOwnProperty('digit') && header[i].digit !== 'raw') {
         return fmt.formatNum(d, header[i].digit);
       }
