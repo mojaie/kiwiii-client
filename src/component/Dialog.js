@@ -118,7 +118,6 @@ function structDialog(rsrc, callback) {
       d3.select('#loading-circle').style('display', 'inline');
       const mthdop = d3.select(d3.select('#struct-method').node().selectedOptions[0]);
       const fmt = d3form.value('#struct-format');
-      // TODO: table, resourceFile
       const query = {
         type: d3form.value('#struct-method'),
         targets: d3form.checkboxValues('#struct-targets'),
@@ -183,54 +182,50 @@ function columnDialog(data, callback) {
     fields: [
       {key: 'name', sortType: 'text', visible: true},
       {key: 'visible', sortType: 'none', valueType: 'control', visible: true},
-      {key: 'sort', sortType: 'none', valueType: 'control', visible: true},
+      {key: 'sortType', sortType: 'none', valueType: 'control', visible: true},
       {key: 'digit', sortType: 'none', valueType: 'control', visible: true}
     ]
   };
-  const records = data.fields.map(e => {
+  const records = data.fields.map((e, i) => {
     return {
       key: e.key,
       name: e.name,
-      visible: selection => {
-        selection.classed('column-vis-select', true)
-          .append('input')
-            .attr('type', 'checkbox')
-            .attr('value', e.key)
-            .property('checked', e.visible);
-      },
-      sort: selection => selection.classed('column-sort-select', true)
+      visible: selection => selection
+          .classed('column-vis', true)
+          .classed(`row${i}`, true)
+        .append('input')
+          .attr('type', 'checkbox')
+          .attr('value', e.key)
+          .property('checked', e.visible)
+      ,sortType: selection => selection
+          .classed('column-sort', true)
+          .classed(`row${i}`, true)
         .append('select')
-        .call(cmp.selectOptions,
-              e.sortType === 'none' ? ['none'] : ['numeric', 'text'], null, d => d)
-        .each(function (value) {
-          d3.select(this).selectAll('option')
-            .property('selected', d => d === value);
-        }),
-      digit: selection => selection.classed('column-digit-select', true)
+          .call(cmp.selectOptions,
+                e.sortType === 'none' ? ['none'] : ['numeric', 'text'], d => d, d => d)
+          .property('value', e.sortType)
+          .on('change', function () {
+            d3.select(`.column-digit.row${i} select`)
+              .attr('disabled', this.value === 'numeric' ? null : 'disabled');
+          })
+      ,digit: selection => selection
+          .classed('column-digit', true)
+          .classed(`row${i}`, true)
         .append('select')
-        .call(cmp.selectOptions, ['raw', 'rounded', 'scientific', 'si'], null, d => d)
-        .attr('disabled', e.sortType === 'numeric' ? null : 'disabled')
-        .each(function (value) {
-          d3.select(this).selectAll('option')
-            .property('selected', d => d === value);
-        })
+          .call(cmp.selectOptions, ['raw', 'rounded', 'scientific', 'si'], d => d, d => d)
+          .property('value', e.digit)
+          .attr('disabled', e.sortType === 'numeric' ? null : 'disabled')
     };
   });
   d3.select('#column-table')
     .call(cmp.createTable, table)
     .call(cmp.updateTableRecords, records, d => d.key);
-  d3.select('#column-table tbody').selectAll('tr')
-    .on('change', function () {
-        const sort = d3.select(this).select('.column-sort-select select').node().value;
-        d3.select(this).select('.column-digit-select select')
-          .attr('disabled', sort === 'numeric' ? null : 'disabled');
-    });
   d3.select('#column-submit')
     .on('click', () => {
       const query = {
-        visibles: d3form.checkboxValues('.column-vis-select'),
-        sortTypes: d3form.optionValues('.column-sort-select'),
-        digits: d3form.optionValues('.column-digit-select')
+        visibles: d3form.checkboxValues('.column-vis'),
+        sortTypes: d3form.optionValues('.column-sort'),
+        digits: d3form.optionValues('.column-digit')
       };
       return store.setFieldProperties(query).then(callback);
     });

@@ -68,19 +68,20 @@ function updateTableRecords(selection, rcds, keyFunc) {
     .enter().append('td');
   rowEntered.merge(rowSelection)
     .selectAll('td')
-    .classed('align-middle', true)
+      .classed('align-middle', true)
     .html(function (d, i) {
       if (d === undefined) return '';
       if (header[i].valueType === 'plot') return '[plot]';
       if (header[i].valueType === 'image') return '[image]';
-      if (header[i].valueType === 'control') {
-        d3.select(this).call(d);
-        return;
-      }
+      if (header[i].valueType === 'control') return;
       if (header[i].hasOwnProperty('digit') && header[i].digit !== 'raw') {
         return fmt.formatNum(d, header[i].digit);
       }
       return d;
+    })
+    .each((d, i, nodes) => {
+      // This should be called after html
+      if (header[i].valueType === 'control') d3.select(nodes[i]).call(d);
     });
 }
 

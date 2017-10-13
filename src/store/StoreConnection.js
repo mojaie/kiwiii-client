@@ -89,7 +89,7 @@ function setFieldProperties(updates) {
   return store.updateItem(getGlobalConfig('urlQuery').id, item => {
     item.fields.forEach((fd, i) => {
       fd.visible = updates.visibles.includes(fd.key);
-      fd.sort = updates.sorts[i];
+      fd.sortType = updates.sortTypes[i];
       fd.digit = updates.digits[i];
     });
   });

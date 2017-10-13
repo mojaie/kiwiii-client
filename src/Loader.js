@@ -21,6 +21,7 @@ function initialize() {
     console.info('Off-line mode is not supported');
   }
   return fetcher.getJSON('server').then(server => {
+    // TODO: return server status
     store.setGlobalConfig('server', server);
     return store.getAppSetting('serverInstance').then(instance => {
       if (server.instance === instance) {

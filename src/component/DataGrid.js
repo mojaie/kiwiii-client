@@ -21,19 +21,20 @@ const defaultColumnHeight = {
 
 function createDataGrid(selection, data) {
   // Header
-  if (!selection.select('div.dg-header').size()) {
-    selection.append('div').classed('dg-header', true);
+  if (selection.select('div.dg-header').size()) {
+    selection.select('div.dg-header').remove();
   }
+  selection.append('div').classed('dg-header', true);
   // Body
-  if (!selection.select('div.dg-viewport').size()) {
-    selection.append('div').classed('dg-viewport', true)
-      .append('div').classed('dg-body', true);
+  if (selection.select('div.dg-viewport').size()) {
+    selection.select('div.dg-viewport').remove();
   }
-  const cols = data.fields
-    .filter(e => !e.hasOwnProperty('visible') || e.visible !== false)
+  selection.append('div').classed('dg-viewport', true)
+    .append('div').classed('dg-body', true);
+  const cols = data.fields.filter(e => e.visible)
     .map(e => {
-      e.width = defaultColumnWidth[e.sortType || 'numeric'];
-      e.height = defaultColumnHeight[e.sortType || 'numeric'];
+      e.width = defaultColumnWidth[e.sortType];
+      e.height = defaultColumnHeight[e.sortType];
       return e;
     });
   const rowSize = {
@@ -42,8 +43,9 @@ function createDataGrid(selection, data) {
   };
   selection.style('width', `${rowSize.width}px`);
   selection.select('.dg-header').datum(rowSize);
-  const header = selection.select('.dg-header').selectAll('.dg-hcell')
-    .data(cols, d => d.key);
+  const header = selection.select('.dg-header')
+    .selectAll('.dg-hcell')
+      .data(cols, d => d.key);
   header.exit().remove();
   header.enter().append('div')
       .classed('dg-hcell', true)
@@ -76,33 +78,34 @@ function updateRows(selection, rcds, keyFunc, position, visibleRows) {
       .classed('align-middle', true)
       .style('display', 'inline-block')
       .style('width', d => `${d}px`);
+  // TODO: need refactoring
   rowEntered.merge(rowSelection)
-    .order()
-    .each(function(d, ri) {
-      const rowPos = (position + ri) * rSize.height;
-      d3.select(this)
-        .style('transform', `translate(0px, ${rowPos}px)`)
-        .classed('odd', (position + ri) % 2 === 0)
-      .selectAll('.dg-cell')
-        .html(function(_, i) {
-          d3.select(this).attr('id', `c${ri}-${i}`);
-          const value = d[cData[i].key];
-          if (value === undefined) return '';
-          if (cData[i].valueType === 'plot') return '';
-          if (cData[i].valueType === 'image') {  // data URI
-            return `<img src="${value}" width="180" height="180"/>`;
-          }
-          if (cData[i].hasOwnProperty('digit') && cData[i].digit !== 'raw') {
-            return fmt.formatNum(value, cData[i].digit);
-          }
-          return value;
-        })
-        .each(function(_, i) {
-          if (cData[i].valueType !== 'plot') return;
-          if (!d.hasOwnProperty(cData[i].key)) return;
-          const value = d[cData[i].key];
-          img.showPlot(value, `#c${ri}-${i}`);
-        });
+      .order()
+      .each(function(d, ri) {
+        const rowPos = (position + ri) * rSize.height;
+        d3.select(this)
+          .style('transform', `translate(0px, ${rowPos}px)`)
+          .classed('odd', (position + ri) % 2 === 0)
+        .selectAll('.dg-cell')
+          .html(function(_, i) {
+            d3.select(this).attr('id', `c${ri}-${i}`);
+            const value = d[cData[i].key];
+            if (value === undefined) return '';
+            if (cData[i].valueType === 'plot') return '';
+            if (cData[i].valueType === 'image') {  // data URI
+              return `<img src="${value}" width="180" height="180"/>`;
+            }
+            if (cData[i].hasOwnProperty('digit') && cData[i].digit !== 'raw') {
+              return fmt.formatNum(value, cData[i].digit);
+            }
+            return value;
+          })
+          .each(function(_, i) {
+            if (cData[i].valueType !== 'plot') return;
+            if (!d.hasOwnProperty(cData[i].key)) return;
+            const value = d[cData[i].key];
+            img.showPlot(value, `#c${ri}-${i}`);
+          });
     });
 }
 

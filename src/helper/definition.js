@@ -10,6 +10,18 @@ function capitalized(str) {
 }
 
 
+const defaultHiddenFields = ['_mw', '_mw_wo_sw', '_logp', '_formula', '_nonH'];
+
+
+function setDefaultFieldProperties(fields) {
+  return fields.map(e => {
+    e.visible = !defaultHiddenFields.includes(e.id);
+    e.digit = 'raw';
+    return e;
+  });
+}
+
+
 function fetchable(tbl) {
   return ['In progress', 'Queued', 'Aborting'].includes(tbl.status);
 }
@@ -34,5 +46,6 @@ function dataSourceId(domain, resource, column) {
 
 
 export default {
+  setDefaultFieldProperties,
   capitalized, fetchable, abortRequestable, conclike, dataSourceId
 };
