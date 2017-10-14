@@ -31,6 +31,7 @@ function createDataGrid(selection, data) {
   }
   selection.append('div').classed('dg-viewport', true)
     .append('div').classed('dg-body', true);
+  console.log(data);
   const cols = data.fields.filter(e => e.visible)
     .map(e => {
       e.width = defaultColumnWidth[e.sortType];

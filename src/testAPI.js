@@ -8,62 +8,65 @@ import {default as fetcher} from './fetcher.js';
 const testCases = [];
 
 testCases.push(() =>
-  fetcher.getJSON('server')
+  fetcher.get('server').then(fetcher.json)
     .then(res => ({output: res, test: 'server', pass: true}))
     .catch(err => ({output: err, test: 'server', pass: false}))
 );
 
 testCases.push(() =>
-  fetcher.getJSON('schema')
+  fetcher.get('schema').then(fetcher.json)
     .then(res => ({output: res, test: 'schema', pass: true}))
     .catch(err => ({output: err, test: 'schema', pass: false}))
 );
 
 testCases.push(() =>
-  fetcher.getJSON('run', {
+  fetcher.get('run', {
     type: 'chemsearch',
     targets: ['drugbankfda'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143']
-  }).then(res => ({output: res, test: 'chemsearch', pass: true}))
+  }).then(fetcher.json)
+    .then(res => ({output: res, test: 'chemsearch', pass: true}))
     .catch(err => ({output: err, test: 'chemsearch', pass: false}))
 );
 
 testCases.push(() =>
-  fetcher.getJSON('run', {
+  fetcher.get('run', {
     type: 'filter',
     targets: ['test1', 'test1_2', 'freqhit'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
     operator: 'in'
-  }).then(res => ({output: res, test: 'filter', pass: true}))
+  }).then(fetcher.json)
+    .then(res => ({output: res, test: 'filter', pass: true}))
     .catch(err => ({output: err, test: 'filter', pass: false}))
 );
 
 testCases.push(() =>
-  fetcher.getJSON('run', {
+  fetcher.get('run', {
     type: 'profile',
     id: 'DB00189'
-  }).then(res => ({output: res, test: 'profile', pass: true}))
+  }).then(fetcher.json)
+    .then(res => ({output: res, test: 'profile', pass: true}))
     .catch(err => ({output: err, test: 'profile', pass: false}))
 );
 
 testCases.push(() =>
-  fetcher.getText('strprev', {
+  fetcher.get('strprev', {
     format: 'dbid',
     source: 'drugbankfda',
     value: 'DB00115'
-  }).then(res => (
-    {
+  }).then(fetcher.text)
+    .then(res => ({
       output: new DOMParser().parseFromString(res, "image/svg+xml"),
       test: 'strprev', pass: true
-    }
-  )).catch(err => ({output: err, test: 'strprev', pass: false}))
+    }))
+    .catch(err => ({output: err, test: 'strprev', pass: false}))
 );
 
 testCases.push(() =>
   new Promise(r => {
-    fetcher.getJSON('async', {
+    fetcher.get('async', {
       type: 'substr',
       targets: ['drugbankfda'],
       queryMol: {
@@ -74,30 +77,32 @@ testCases.push(() =>
       params: {
         ignoreHs: true
       }
-    }).then(res => {
-      setTimeout(() => {
-        const query = {id: res.id, command: 'abort'};
-        fetcher.getJSON('res', query).then(rows => r([res, rows]));
-      }, 2000);
-    });
+    }).then(fetcher.json)
+      .then(res => {
+        setTimeout(() => {
+          const query = {id: res.id, command: 'abort'};
+          fetcher.get('res', query).then(fetcher.json).then(rows => r([res, rows]));
+        }, 2000);
+      });
   }).then(res => ({output: res, test: 'substr', pass: true}))
     .catch(err => ({output: err, test: 'substr', pass: false}))
 );
 
 testCases.push(() =>
   new Promise(r => {
-    fetcher.getJSON('async', {
+    fetcher.get('async', {
       type: 'chemprop',
       targets: ['drugbankfda'],
       key: '_mw',
       values: [1000],
       operator: 'gt'
-    }).then(res => {
-      setTimeout(() => {
-        const query = {id: res.id, command: 'abort'};
-        fetcher.getJSON('res', query).then(rows => r([res, rows]));
-      }, 2000);
-    });
+    }).then(fetcher.json)
+      .then(res => {
+        setTimeout(() => {
+          const query = {id: res.id, command: 'abort'};
+          fetcher.get('res', query).then(fetcher.json).then(rows => r([res, rows]));
+        }, 2000);
+      });
   }).then(res => ({output: res, test: 'prop', pass: true}))
     .catch(err => ({output: err, test: 'prop', pass: false}))
 );

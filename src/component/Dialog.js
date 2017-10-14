@@ -32,7 +32,7 @@ function pickDialog(rsrc, callback) {
         key: 'id',
         values: d3form.textareaLines('#pick-queryarea')
       };
-      return fetcher.getJSON('run', query).then(callback);
+      return fetcher.get('run', query).then(fetcher.json).then(callback);
     });
 }
 
@@ -57,7 +57,7 @@ function propDialog(rsrc, callback) {
         values: d3form.textareaLines('#prop-queryarea'),
         operator: d3form.value('#prop-operator')
       };
-      return fetcher.getJSON('async', query).then(callback);
+      return fetcher.get('async', query).then(fetcher.json).then(callback);
     });
 }
 
@@ -110,7 +110,7 @@ function structDialog(rsrc, callback) {
         value: fmt === 'molfile'
           ? d3form.value('#struct-queryarea') : d3form.textareaLines('#struct-queryarea')[0],
       };
-      return fetcher.getText('strprev', query)
+      return fetcher.get('strprev', query).then(fetcher.text)
         .then(res => d3.select('#struct-image').html(res));
     });
   d3.select('#struct-submit')
@@ -137,7 +137,7 @@ function structDialog(rsrc, callback) {
           timeout: mthdop.classed('rd') ? d3form.valueInt('#struct-timeout') : null
         }
       };
-      return fetcher.getJSON('async', query).then(callback);
+      return fetcher.get('async', query).then(fetcher.json).then(callback);
     });
 }
 

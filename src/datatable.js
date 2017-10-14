@@ -72,13 +72,13 @@ function render() {
       d3.select('#excel')
         .on('click', () => {
           const query = {json: new Blob([JSON.stringify(tbl)])};
-          return fetcher.getBlob('xlsx', query)
+          return fetcher.get('xlsx', query).then(fetcher.blob)
             .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.xlsx`));
         });
       d3.select('#sdfile')
         .on('click', () => {
           const query = {json: new Blob([JSON.stringify(tbl)])};
-          return fetcher.getText('sdfout', query)
+          return fetcher.get('sdfout', query).then(fetcher.text)
             .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.sdf`));
         });
     }
@@ -87,8 +87,8 @@ function render() {
 }
 
 
-
 function loadNewTable(data) {
+  data.fields = def.setDefaultFieldProperties(data.fields);
   return store.insertTable(data).then(() => {
     window.location = `datatable.html?id=${data.id}`;
   });
@@ -99,7 +99,7 @@ function fetch_(command) {
   return store.getCurrentTable().then(data => {
     if (!def.fetchable(data)) return;
     const query = {id: data.id, command: command};
-    return fetcher.getJSON('res', query)
+    return fetcher.get('res', query).then(fetcher.json)
       .then(res => {
         return store.getDataSourceColumns(res.domain, res.dataSource)
           .then(cols => store.getFetcher(res.domain).formatResult(cols, res));

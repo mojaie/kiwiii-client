@@ -5,7 +5,7 @@ import Dexie from 'Dexie';
 
 const schema = {
   app: 'key',
-  items: 'id, format, responseDate',
+  items: 'id, dataType, created',
   resources: 'id'
 };
 
@@ -38,14 +38,14 @@ function putResources(data) { // returns last id in success
 
 
 function getAllItems() {
-  return idb.items.orderBy('responseDate').reverse()
+  return idb.items.orderBy('created').reverse()
     .toArray();
 }
 
 
-function getItemsByFormat(format) {
-  return idb.items.where('format').equals(format).reverse()
-    .sortBy('responseDate');
+function getItemsByDataType(type) {
+  return idb.items.where('dataType').equals(type).reverse()
+    .sortBy('created');
 }
 
 
@@ -79,6 +79,6 @@ function reset() {
 
 export default {
   getAppSetting, putAppSetting, getResources, putResources,
-  getAllItems, getItemsByFormat, getItemById,
+  getAllItems, getItemsByDataType, getItemById,
   updateItem, deleteItem, putItem, reset
 };

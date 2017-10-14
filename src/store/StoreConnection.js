@@ -57,8 +57,8 @@ function getAllTables() {
 }
 
 
-function getTablesByFormat(format) {
-  return store.getItemsByFormat(format);
+function getTablesByDataType(type) {
+  return store.getItemsByDataType(type);
 }
 
 
@@ -156,7 +156,7 @@ function reset() {
 export default {
   getAppSetting, setAppSetting, getGlobalConfig, setGlobalConfig,
   getResources, setResources,
-  getAllTables, getTablesByFormat, getTable, getRecords,
+  getAllTables, getTablesByDataType, getTable, getRecords,
   getCurrentTable, getCurrentRecords,
   setFieldProperties, joinFields,
   updateTableAttribute, insertTable, updateTable,

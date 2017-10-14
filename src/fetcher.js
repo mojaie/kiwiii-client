@@ -9,22 +9,27 @@ function get(url, query={}) {
     {
       credentials: 'include'
     }
-  );
+  ).then(res => {
+    if (res.status !== 200) {
+      return Promise.reject(new Error(res.statusText));
+    }
+    return Promise.resolve(res);
+  });
 }
 
-function getJSON(url, query={}) {
-  return get(url, query).then(res => res.json());
+function json(response) {
+  return response.json();
 }
 
-function getText(url, query={}) {
-  return get(url, query).then(res => res.text());
+function text(response) {
+  return response.text();
 }
 
-function getBlob(url, query={}) {
-  return get(url, query).then(res => res.blob());
+function blob(response) {
+  return response.blob();
 }
 
-function postform(url, formdata) {
+function post(url, formdata) {
   return fetch(
     `${baseURL}${url}`,
     {
@@ -32,10 +37,15 @@ function postform(url, formdata) {
       body: formdata,
       credentials: 'include'
     }
-  );
+  ).then(res => {
+    if (res.status !== 200) {
+      return Promise.reject(new Error(res.statusText));
+    }
+    return Promise.resolve(res);
+  });
 }
 
 
 export default {
-  getJSON, getText, getBlob, postform
+  get, json, text, blob, post
 };
