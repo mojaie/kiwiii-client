@@ -2,6 +2,7 @@
 import d3 from 'd3';
 import {default as d3form} from './helper/d3Form.js';
 import {default as fmt} from './helper/formatValue.js';
+import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
@@ -9,27 +10,29 @@ import {default as cmp} from './component/Component.js';
 
 
 function updateChem(resources) {
-  const compound = store.getGlobalConfig('urlQuery').compound;
+  const compound = win.URLQuery().compound;
   const query = {
     type: 'chemsearch',
     targets: resources.filter(e => e.domain === 'chemical').map(e => e.id),
     key: 'id',
     values: [compound]
   };
-  return fetcher.getJSON('run', query).then(res => {
-    const rcd = res.records[0];
-    d3.select('#compoundid').html(rcd.id);
-    d3.select('#compounddb').html(resources.find(e => e.id === rcd.source).name);
-    d3.select('#structure').html(rcd._structure);
-    const records = res.fields
-      .filter(e => !['_structure', '_index', 'id'].includes(e.key))
-      .map(e => ({ key: e.name, value: rcd[e.key] }));
-    const data = {
-      fields: [
-        {key: 'key', sort: 'text', visible: true},
-        {key: 'value', sort: 'text', visible: true}
-      ]
-    };
+  return fetcher.get('run', query)
+    .then(fetcher.json)
+    .then(res => {
+      const rcd = res.records[0];
+      d3.select('#compoundid').html(rcd.id);
+      d3.select('#compounddb').html(resources.find(e => e.id === rcd.source).name);
+      d3.select('#structure').html(rcd._structure);
+      const records = res.fields
+        .filter(e => !['_structure', '_index', 'id'].includes(e.key))
+        .map(e => ({ key: e.name, value: rcd[e.key] }));
+      const data = {
+        fields: [
+          {key: 'key', sort: 'text', visible: true},
+          {key: 'value', sort: 'text', visible: true}
+        ]
+      };
     d3.select('#properties').call(cmp.createTable, data)
       .call(cmp.updateTableRecords, records, d => d.key);
     return rcd;
@@ -48,29 +51,31 @@ function updateChemAliases(resources, qrcd) {
     },
     params: {ignoreHs: true}
   };
-  return fetcher.getJSON('run', query).then(res => {
-    const records = res.records
-      .filter(rcd => rcd.id !== qrcd.id || rcd.source !== qrcd.source)
-      .map(rcd => {
-        return {
-          id: `<a href="profile.html?compound=${rcd.id}" target="_blank">${rcd.id}</a>`,
-          database: resources.find(e => e.id === rcd.source).name
-        };
-      });
-    const data = {
-      fields: [
-        {key: 'id', sort: 'text', visible: true},
-        {key: 'database', sort: 'text', visible: true}
-      ]
-    };
-    d3.select('#aliases').call(cmp.createTable, data)
-      .call(cmp.updateTableRecords, records, d => d.id);
-  });
+  return fetcher.get('run', query)
+    .then(fetcher.json)
+    .then(res => {
+      const records = res.records
+        .filter(rcd => rcd.id !== qrcd.id || rcd.source !== qrcd.source)
+        .map(rcd => {
+          return {
+            id: `<a href="profile.html?compound=${rcd.id}" target="_blank">${rcd.id}</a>`,
+            database: resources.find(e => e.id === rcd.source).name
+          };
+        });
+      const data = {
+        fields: [
+          {key: 'id', sort: 'text', visible: true},
+          {key: 'database', sort: 'text', visible: true}
+        ]
+      };
+      d3.select('#aliases').call(cmp.createTable, data)
+        .call(cmp.updateTableRecords, records, d => d.id);
+    });
 }
 
 
-function updateActivities(resources) {
-  const compound = store.getGlobalConfig('urlQuery').compound;
+function updateActivities() {
+  const compound = win.URLQuery().compound;
   // Prevent implicit submission
   document.getElementById('search')
     .addEventListener('keypress', event => {
@@ -89,19 +94,21 @@ function updateActivities(resources) {
     type: 'profile',
     id: compound
   };
-  return fetcher.getJSON('run', query).then(res => {
-    const table = {
-      fields: [
-        {key: 'name', sort: 'text', visible: true},
-        {key: 'tags', sort: 'text', visible: true},
-        {key: 'valueType', sort: 'text', visible: true},
-        {key: 'value', sort: 'numeric', visible: true, valueType: 'AC50'},
-        {key: 'remarks', sort: 'none', visible: true}
-      ]
-    };
-    d3.select('#results').call(cmp.createTable, table)
-      .call(cmp.updateTableRecords, res.records, d => d.id);
-  });
+  return fetcher.get('run', query)
+    .then(fetcher.json)
+    .then(res => {
+      const table = {
+        fields: [
+          {key: 'name', sort: 'text', visible: true},
+          {key: 'tags', sort: 'text', visible: true},
+          {key: 'valueType', sort: 'text', visible: true},
+          {key: 'value', sort: 'numeric', visible: true, valueType: 'AC50'},
+          {key: 'remarks', sort: 'none', visible: true}
+        ]
+      };
+      d3.select('#results').call(cmp.createTable, table)
+        .call(cmp.updateTableRecords, res.records, d => d.id);
+    });
 
   /*
   const tasks = store.dataFetcherInstances()
@@ -138,7 +145,7 @@ function run() {
     .then(() => store.getResources())
     .then(rsrcs => Promise.all([
       updateChem(rsrcs).then(qrcd => updateChemAliases(rsrcs, qrcd)),
-      updateActivities(rsrcs)
+      updateActivities()
     ]));
 }
 

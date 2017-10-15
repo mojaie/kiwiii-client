@@ -5,7 +5,7 @@ import d3 from 'd3';
 
 import KArray from '../helper/KArray.js';
 import {default as d3form} from '../helper/d3Form.js';
-import {default as dstr} from '../helper/dataStructure.js';
+import {default as mapper} from '../helper/mapper.js';
 import {default as fmt} from '../helper/formatValue.js';
 import {default as hfile} from '../helper/file.js';
 import {default as parser} from '../helper/parser.js';
@@ -71,31 +71,29 @@ function structDialog(rsrc, callback) {
     d3.select('#struct-method').selectAll('option.rd')
       .attr('disabled', rdk ? null : 'disabled');
   });
-  d3.select('#struct-method')
+  d3.selectAll('#struct-method,#struct-thldtype')
     .on('change', function () {
-      const op = d3.select(this.selectedOptions[0]);
+      const method = d3form.value('#struct-method');
+      const thldtype = d3form.value('#struct-thldtype');
+      d3.select('#struct-thld')
+        .attr('disabled', ['gls', 'rdmorgan', 'rdfmcs'].includes(method) ? null : 'disabled')
+        .attr('value', thldtype === 'edge' ? 15 : 0.7)
+        .attr('min', thldtype === 'edge' ? 5 : 0)
+        .attr('max', thldtype === 'edge' ? 999 : 1.0)
+        .attr('step', thldtype === 'edge' ? 1 : 0.01);
       d3.select('#struct-thldtype')
-        .attr('disabled', op.classed('thld') ? null : 'disabled')
-        .property('value', op.classed('edge') ? 'edge' : 'sim');
-      d3.select('#struct-thld')
-        .attr('disabled', op.classed('thld') ? null : 'disabled');
+        .attr('disabled', ['gls', 'rdmorgan', 'rdfmcs'].includes(method) ? null : 'disabled')
+        .property('value', ['gls', 'rdfmcs'].includes(method) ? undefined : 'sim');
       d3.select('#struct-thldtype option.sim')
-        .attr('disabled', op.classed('sim') ? null : 'disabled');
+        .attr('disabled', ['gls', 'rdmorgan', 'rdfmcs'].includes(method) ? null : 'disabled');
       d3.select('#struct-thldtype option.edge')
-        .attr('disabled', op.classed('edge') ? null : 'disabled');
+        .attr('disabled', ['gls', 'rdfmcs'].includes(method) ? null : 'disabled');
       d3.select('#struct-options').selectAll('.gls')
-        .attr('disabled', op.classed('gls') ? null : 'disabled');
-      d3.select('#struct-options').selectAll('.fmcs')
-        .attr('disabled', this.value === 'rdfmcs' ? null : 'disabled');
-    });
-  d3.selectAll('.thld-range')
-    .on('change', function () {
-      d3.select('#struct-thld')
-        .attr('value', this.value === 'edge' ? 15 : 0.7)
-        .attr('min', this.value === 'edge' ? 5 : 0)
-        .attr('max', this.value === 'edge' ? 999 : 1.0)
-        .attr('step', this.value === 'edge' ? 1 : 0.01);
-    });
+        .attr('disabled', method === 'gls' ? null : 'disabled');
+      d3.select('#struct-options .fmcs')
+        .attr('disabled', method === 'rdfmcs' ? null : 'disabled');
+    })
+    .dispatch('change');
   d3.select('#struct-format')
     .on('change', function () {
       d3.select('#struct-qsrc')
@@ -115,8 +113,10 @@ function structDialog(rsrc, callback) {
     });
   d3.select('#struct-submit')
     .on('click', () => {
+      // TODO: mthdop
+      const method = d3form.value('#struct-method');
+
       d3.select('#loading-circle').style('display', 'inline');
-      const mthdop = d3.select(d3.select('#struct-method').node().selectedOptions[0]);
       const fmt = d3form.value('#struct-format');
       const query = {
         type: d3form.value('#struct-method'),
@@ -131,10 +131,10 @@ function structDialog(rsrc, callback) {
           measure: d3form.value('#struct-thldtype'),
           threshold: d3form.valueFloat('#struct-thld'),
           ignoreHs: d3form.checked('#struct-ignoreh'),
-          diameter: mthdop.classed('gls') ? d3form.valueInt('#struct-diam') : null,
-          maxTreeSize: mthdop.classed('gls') ? d3form.valueInt('#struct-tree') : null,
-          molSizeCutoff: mthdop.classed('gls') ? d3form.valueInt('#struct-skip') : null,
-          timeout: mthdop.classed('rd') ? d3form.valueInt('#struct-timeout') : null
+          diameter: method === 'gls' ? d3form.valueInt('#struct-diam') : null,
+          maxTreeSize: method === 'gls' ? d3form.valueInt('#struct-tree') : null,
+          molSizeCutoff: method === 'gls' ? d3form.valueInt('#struct-skip') : null,
+          timeout: method === 'rdfmcs' ? d3form.valueInt('#struct-timeout') : null
         }
       };
       return fetcher.get('async', query).then(fetcher.json).then(callback);
@@ -282,8 +282,8 @@ function importColDialog(tbl, callback) {
       const file = document.getElementById('importcol-file').files[0];
       const isCsv = file.name.split('.').pop() === 'csv';
       hfile.readFile(file).then(res => {
-        const mapping = isCsv ? dstr.csvToMapping(res) : JSON.parse(res);
-        const tbl = dstr.columnMappingToTable(mapping);
+        const mapping = isCsv ? mapper.csvToMapping(res) : JSON.parse(res);
+        const tbl = mapper.columnMappingToTable(mapping);
         d3.select('#importcol-preview').call(cmp.createTable, tbl)
           .call(cmp.updateTableRecords,
                 tbl.records.slice(0, 5), d => d[tbl.fields[0].key]);
@@ -298,7 +298,7 @@ function importColDialog(tbl, callback) {
       // Generate thumbnails
       const plotCols = [];
       if (mapping.hasOwnProperty('field')) {
-        mapping = dstr.singleToMultiMapping(mapping);
+        mapping = mapper.singleToMultiMapping(mapping);
       }
       mapping.fields.forEach((e, i) => {
         if (e.valueType === 'plot') {

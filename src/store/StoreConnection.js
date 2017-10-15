@@ -1,31 +1,7 @@
 
-import KArray from '../helper/KArray.js';
+import {default as win} from '../helper/window.js';
+import {default as mapper} from '../helper/mapper.js';
 import {default as store} from './IDBStore.js';
-
-
-// Global config
-
-const globalConfig = {
-  "onLine": true,
-  "server": {},
-  "templates": {},
-  "urlQuery": {}
-};
-
-window.location.search.substring(1).split("&")
-  .map(e => e.split('=')).forEach(e => {
-    globalConfig.urlQuery[e[0]] = e[1];
-  });
-
-
-function getGlobalConfig(key) {
-  return globalConfig[key];
-}
-
-
-function setGlobalConfig(key, value) {
-  globalConfig[key] = value;
-}
 
 
 function getAppSetting(key) {
@@ -38,8 +14,6 @@ function setAppSetting(key, value) {
 }
 
 
-// API data resource on local IndexedDB
-
 function getResources() {
   return store.getResources();
 }
@@ -49,8 +23,6 @@ function setResources(rsrcs) {
   return store.putResources(rsrcs);
 }
 
-
-// Datatable on local IndexedDB
 
 function getAllTables() {
   return store.getAllItems();
@@ -62,31 +34,19 @@ function getTablesByDataType(type) {
 }
 
 
-function getTable(tableId) {
-  return store.getItemById(tableId);
+function getTable(id) {
+  return store.getItemById(id);
 }
 
 
-function getRecords(tableId) {
-  return store.getItemById(tableId)
-    .then(tbl => tbl.records);
-}
-
-
-function getCurrentTable() {
-  const q = getGlobalConfig('urlQuery');
-  if (!q.hasOwnProperty('id')) return Promise.resolve();
-  return store.getItemById(q.id);
-}
-
-
-function getCurrentRecords() {
-  return getCurrentTable().then(tbl => tbl.records);
+function getRecords(id) {
+  return store.getItemById(id)
+    .then(table => table.records);
 }
 
 
 function setFieldProperties(updates) {
-  return store.updateItem(getGlobalConfig('urlQuery').id, item => {
+  return store.updateItem(win.URLQuery().id, item => {
     item.fields.forEach((fd, i) => {
       fd.visible = updates.visibles.includes(fd.key);
       fd.sortType = updates.sortTypes[i];
@@ -96,28 +56,15 @@ function setFieldProperties(updates) {
 }
 
 
-function joinFields(mapping, tableId=globalConfig.urlQuery.id) {
-  const fds = mapping.hasOwnProperty('field') ? mapping.field : mapping.fields;
-  return store.updateItem(tableId, item => {
-    item.records
-      .filter(rcd => mapping.mapping.hasOwnProperty(rcd[mapping.key]))
-      .forEach(rcd => {
-        if (mapping.hasOwnProperty('field')) {
-          rcd[mapping.field.key] = mapping.mapping[rcd[mapping.key]];
-        } else {
-          mapping.fields.forEach((fd, i) => {
-            rcd[fd.key] = mapping.mapping[rcd[mapping.key]][i];
-          });
-        }
-      });
-    item.columns = KArray.from(item.columns).concat(fds).unique('key');
-    item.lastUpdated = mapping.lastUpdated;
+function joinFields(mapping, id=win.URLQuery().id) {
+  return store.updateItem(id, item => {
+    mapper.apply(item, mapping);
   });
 }
 
 
-function updateTableAttribute(tblID, key, value) {
-  return store.updateItem(tblID, item => {
+function updateTableAttribute(id, key, value) {
+  return store.updateItem(id, item => {
     item[key] = value;
   });
 }
@@ -129,16 +76,13 @@ function insertTable(data) {
 
 
 function updateTable(data) {
-  if (data === undefined) return Promise.resolve();  // No update
+  if (data === undefined) return Promise.resolve(null);  // No update
   if (data.status === 'failure') {  // No data found on server
     return updateTableAttribute(data.id, 'status', 'failure');
   }
   // update
   return store.updateItem(data.id, item => {
     Object.assign(item, data);
-    if (data.hasOwnProperty('lastUpdated')) {
-      item.lastUpdated = data.lastUpdated;
-    }
   });
 }
 
@@ -154,10 +98,8 @@ function reset() {
 
 
 export default {
-  getAppSetting, setAppSetting, getGlobalConfig, setGlobalConfig,
-  getResources, setResources,
+  getAppSetting, setAppSetting, getResources, setResources,
   getAllTables, getTablesByDataType, getTable, getRecords,
-  getCurrentTable, getCurrentRecords,
   setFieldProperties, joinFields,
   updateTableAttribute, insertTable, updateTable,
   deleteTable, reset

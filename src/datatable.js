@@ -6,6 +6,7 @@ import d3 from 'd3';
 import {default as d3form} from './helper/d3Form.js';
 import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
+import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
@@ -23,36 +24,36 @@ function idLink(rcds, idKey) {
 
 
 function renderTableContents(tbl) {
-  return store.getCurrentRecords().then(rcds => {
-    const copied = JSON.parse(JSON.stringify(rcds));  // deep copy
-    idLink(copied, 'id');
-    d3.select('#datatable')
-      .call(grid.createDataGrid, tbl)
-      .call(grid.dataGridRecords, copied, d => d._index)
-      .call(grid.addSort, copied, d => d._index);
-    if (!store.getGlobalConfig('onLine')) return Promise.resolve();
-    dialog.graphDialog(tbl, rcds, res => {
-      res.networkThreshold = res.query.threshold;
-      return store.insertTable(res).then(() => {
-        d3.select('#loading-circle').style('display', 'none');
-        window.open(`graph.html?id=${res.id}`, '_blank');
+  return store.getRecords(win.URLQuery().id)
+    .then(rcds => {
+      const copied = JSON.parse(JSON.stringify(rcds));  // deep copy
+      idLink(copied, 'id');
+      d3.select('#datatable')
+        .call(grid.createDataGrid, tbl)
+        .call(grid.dataGridRecords, copied, d => d._index)
+        .call(grid.addSort, copied, d => d._index);
+      dialog.graphDialog(tbl, rcds, res => {
+        res.networkThreshold = res.query.threshold;
+        return store.insertTable(res).then(() => {
+          d3.select('#loading-circle').style('display', 'none');
+          window.open(`graph.html?id=${res.id}`, '_blank');
+        });
+      });
+      dialog.joinDialog(tbl, rcds, mappings => {
+        return Promise.all(mappings.map(e => store.joinColumn(e))).then(render);
       });
     });
-    dialog.joinDialog(tbl, rcds, mappings => {
-      return Promise.all(mappings.map(e => store.joinColumn(e))).then(render);
-    });
-  });
 }
 
 
 function render() {
-  return store.getCurrentTable().then(tbl => {
+  return store.getTable(win.URLQuery().id).then(tbl => {
     dialog.columnDialog(tbl, render);
     dialog.importColDialog(tbl, colMaps => {
-      const joined = colMaps.map(mp => store.joinColumn(mp));
+      const joined = colMaps.map(mp => store.joinFields(mp));
       return Promise.all(joined).then(render);
     });
-    header.renderStatus(tbl, refresh, abort);
+    header.renderStatus(tbl, fetchResults, () => fetchResults('abort'));
     d3.select('#rename')
       .on('click', () => {
         d3.select('#prompt-title').text('Rename table');
@@ -63,25 +64,25 @@ function render() {
             const name = d3form.value('#prompt-input');
             return store.updateTableAttribute(tbl.id, 'name', name)
               .then(store.getCurrentTable)
-              .then(t => header.renderStatus(t, refresh, abort));
+              .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
           });
       });
     d3.select('#export')
       .on('click', () => hfile.downloadJSON(tbl, tbl.name, true));
-    if (store.getGlobalConfig('onLine')) {
-      d3.select('#excel')
-        .on('click', () => {
-          const query = {json: new Blob([JSON.stringify(tbl)])};
-          return fetcher.get('xlsx', query).then(fetcher.blob)
-            .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.xlsx`));
-        });
-      d3.select('#sdfile')
-        .on('click', () => {
-          const query = {json: new Blob([JSON.stringify(tbl)])};
-          return fetcher.get('sdfout', query).then(fetcher.text)
-            .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.sdf`));
-        });
-    }
+    d3.select('#excel')
+      .on('click', () => {
+        const query = {json: new Blob([JSON.stringify(tbl)])};
+        return fetcher.get('xlsx', query)
+          .then(fetcher.blob)
+          .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.xlsx`));
+      });
+    d3.select('#sdfile')
+      .on('click', () => {
+        const query = {json: new Blob([JSON.stringify(tbl)])};
+        return fetcher.get('sdfout', query)
+          .then(fetcher.text)
+          .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.sdf`));
+      });
     return renderTableContents(tbl);
   });
 }
@@ -95,31 +96,20 @@ function loadNewTable(data) {
 }
 
 
-function fetch_(command) {
-  return store.getCurrentTable().then(data => {
-    if (!def.fetchable(data)) return;
-    const query = {id: data.id, command: command};
-    return fetcher.get('res', query).then(fetcher.json)
-      .then(res => {
-        return store.getDataSourceColumns(res.domain, res.dataSource)
-          .then(cols => store.getFetcher(res.domain).formatResult(cols, res));
-      }).then(store.updateTable);
-  });
-}
-
-
-function refresh() {
-  if (!store.getGlobalConfig('onLine')) return Promise.resolve();
-  return fetch_('update').then(isUpdated => {
-    if (isUpdated !== undefined) return render();
-  });
-}
-
-
-function abort() {
-  return fetch_('abort').then(isUpdated => {
-    if (isUpdated !== undefined) return render();
-  });
+function fetchResults(command='update') {
+  return store.getTable(win.URLQuery().id)
+    .then(data => def.ongoing(data))
+    .then(hasUpdate => {
+      if (!hasUpdate) return Promise.resolve();
+      const query = {id: win.URLQuery().id, command: command};
+      return fetcher.get('res', query)
+        .then(fetcher.json)
+        .then(data => {
+          data.fields = def.setDefaultFieldProperties(data.fields);
+          return data;
+        })
+        .then(store.updateTable);
+    });
 }
 
 
@@ -132,34 +122,35 @@ function run() {
       hfile.loadJSON(file).then(loadNewTable);
     });
   // location parameter enables direct access to datatable JSON via HTTP
-  if (store.getGlobalConfig('urlQuery').hasOwnProperty('location')) {
-    const url = store.getGlobalConfig('urlQuery').location;
+  if (win.URLQuery().hasOwnProperty('location')) {
+    const url = win.URLQuery().location;
     return hfile.fetchJSON(url)
-      .then(data => store.insertTable(data).then(() => data.id))
+      .then(data => store.insertTable(data))
       .then(id => {
         window.location = `datatable.html?id=${id}`;
       });
   }
-  return loader.loader().then(() => {
-    // Disable fetch commands when it is offline
-    if (!store.getGlobalConfig('onLine')) {
+  return loader.loader().then(serverStatus => {
+    if (!serverStatus) {
+      // Disable offline comannds
       d3.selectAll('.online-command')
         .style('color', '#cccccc')
         .classed('disabled', true)
         .on('click', () => d3.event.stopPropagation());
     }
     // Loading tables
-    if (store.getGlobalConfig('urlQuery').hasOwnProperty('id')) {
+    if (win.URLQuery().hasOwnProperty('id')) {
       header.initializeWithData();
-      return fetch_('update').then(render);
+      return fetchResults().then(render);
     } else {
       header.initialize();
       dialog.sdfDialog(loadNewTable);
-      if (!store.getGlobalConfig('onLine')) return Promise.resolve();
+      if (!serverStatus) return Promise.resolve();
       return store.getResources().then(rsrc => {
-        dialog.pickDialog(rsrc, loadNewTable);
-        dialog.structDialog(rsrc, loadNewTable);
-        dialog.propDialog(rsrc, loadNewTable);
+        const chemres = rsrc.filter(e => e.domain === 'chemical');
+        dialog.pickDialog(chemres, loadNewTable);
+        dialog.structDialog(chemres, loadNewTable);
+        dialog.propDialog(chemres, loadNewTable);
       });
     }
   });

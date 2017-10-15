@@ -5,28 +5,29 @@ import {default as loader} from './Loader.js';
 import {default as fetcher} from './fetcher.js';
 import {default as cmp} from './component/Component.js';
 import {default as store} from './store/StoreConnection.js';
+import {default as def} from './helper/definition.js';
 
 
-function tableAction(selection, record, app) {
+function tableAction(selection, data, app) {
   selection.append('a')
       .classed('btn btn-secondary btn-sm', true)
       .attr('role', 'button')
-      .attr('href', `${app}?id=${record.id}`)
+      .attr('href', `${app}?id=${data.id}`)
       .attr('target', '_blank')
       .text('Open');
-  const isRunning = record.status === 'running';
+  const ongoing = def.ongoing(data);
   selection.insert('button')
       .classed('btn btn-warning btn-sm', true)
       .attr('type', 'button')
-      .attr('data-toggle', isRunning ? null : 'modal')
-      .attr('data-target', isRunning ? null : '#confirm-dialog')
-      .property('disabled', isRunning ? 'disabled' : null)
-      .text(isRunning ? 'Running' : 'Delete')
+      .attr('data-toggle', ongoing ? null : 'modal')
+      .attr('data-target', ongoing ? null : '#confirm-dialog')
+      .property('disabled', ongoing ? 'disabled' : null)
+      .text(ongoing ? 'Running' : 'Delete')
       .on('click', function() {
         d3.select('#confirm-message')
-          .text(`Are you sure you want to delete ${record.name} ?`);
+          .text(`Are you sure you want to delete ${data.name} ?`);
         d3.select('#confirm-submit')
-          .on('click', () => store.deleteTable(record.id).then(run));
+          .on('click', () => store.deleteTable(data.id).then(run));
       });
 }
 
@@ -82,7 +83,7 @@ function renderServerStatus(data) {
 }
 
 
-function render(serverStatus) {
+function run() {
   d3.select('#refresh-all')
     .on('click', () => {
       return store.getAllTables().then(tables => {
@@ -102,15 +103,12 @@ function render(serverStatus) {
       d3.select('#confirm-submit')
         .on('click', () => store.reset().then(run));
     });
-  if (serverStatus) renderServerStatus(serverStatus);
-  return Promise.all([
-    store.getTablesByDataType('nodes').then(renderTableStatus),
-    store.getTablesByDataType('edges').then(renderGraphStatus)
-  ]);
-}
-
-
-function run() {
-  return loader.loader().then(render);
+  return loader.loader().then(serverStatus => {
+    if (serverStatus) renderServerStatus(serverStatus);
+    return Promise.all([
+      store.getTablesByDataType('nodes').then(renderTableStatus),
+      store.getTablesByDataType('edges').then(renderGraphStatus)
+    ]);
+  });
 }
 run();

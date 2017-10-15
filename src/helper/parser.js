@@ -12,6 +12,7 @@ function getSDFPropList(str) {
 }
 
 
+// TODO: not used
 function queryFormData(query) {
   const formData = new FormData();
   Object.entries(query).forEach(kv => {
@@ -24,6 +25,8 @@ function queryFormData(query) {
   return formData;
 }
 
+
+// TODO: not used
 function queryURL(query) {
   const queryStr = [];
   Object.entries(query).forEach(e => {

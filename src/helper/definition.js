@@ -22,8 +22,8 @@ function setDefaultFieldProperties(fields) {
 }
 
 
-function abortable(tbl) {
-  return ['running', 'ready'].includes(tbl.status);
+function ongoing(data) {
+  return ['running', 'ready'].includes(data.status);
 }
 
 
@@ -35,5 +35,5 @@ function conclike(col) {
 
 export default {
   setDefaultFieldProperties,
-  capitalized, abortable, conclike
+  capitalized, ongoing, conclike
 };
