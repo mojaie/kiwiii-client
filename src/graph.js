@@ -7,6 +7,7 @@ import {default as d3form} from './helper/d3Form.js';
 import {default as d3scale} from './helper/d3Scale.js';
 import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
+import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
 import {default as loader} from './Loader.js';
 import {default as store} from './store/StoreConnection.js';
@@ -33,8 +34,7 @@ function takeSnapshot() {
 
 
 function saveSnapshot() {
-  const currentId = store.getGlobalConfig('urlQuery').id;
-  return store.updateTableAttribute(currentId, 'snapshot', takeSnapshot())
+  return store.updateTableAttribute('snapshot', takeSnapshot())
     .then(() => console.info('Snapshot saved'));
 }
 
@@ -78,136 +78,134 @@ function resume(snapshot) {
 }
 
 
-function getCurrentGraph() {
-  return store.getCurrentTable().then(edges => {
-    return store.getTable(edges.nodeTableId).then(nodes => {
-      return {edges: edges, nodes: nodes};
+function getGraph() {
+  return store.getTable()
+    .then(edges => {
+      return store.getTable(edges.nodeTableId)
+        .then(nodes => {
+          return {edges: edges, nodes: nodes};
+        });
     });
-  });
 }
 
 
 function start() {
-  return getCurrentGraph().then(g => {
-    header.renderStatus(g.edges, refresh, abort);
-    const edgesToDraw = g.edges.records
-      .filter(e => e.weight >= g.edges.networkThreshold);
-    const edgeDensity = d3.format('.3e')(edgesToDraw.length / g.edges.searchCount);
-    d3.select('#edge-density').text(edgeDensity);
-    d3.select('#network-thld').text(g.edges.networkThreshold);
-    component.graphEdges(d3.select('#graph-contents'), edgesToDraw);
-    component.graphNodes(d3.select('#graph-contents'), g.nodes.records);
-    d3.select('#show-struct').property('checked', false);  // for fast loading
-    force.setForce(
-      g.nodes.records, edgesToDraw, force.tick,
-      () => {
-        force.end();
-        saveSnapshot();
-      });
-    if (g.edges.hasOwnProperty('snapshot')) {
-      resume(g.edges.snapshot);
-      interaction.stickNodes();
-    } else {
-      interaction.restart();
-    }
-    d3.select('#graph-contents').style('opacity', 1e-6)
-      .transition()
-      .duration(1000)
-      .style('opacity', 1);
-  });
+  return getGraph()
+    .then(g => {
+      header.renderStatus(g.edges, fetchResults, () => fetchResults('abort'));
+      const edgesToDraw = g.edges.records
+        .filter(e => e.weight >= g.edges.networkThreshold);
+      const edgeDensity = d3.format('.3e')(edgesToDraw.length / g.edges.searchCount);
+      d3.select('#edge-density').text(edgeDensity);
+      d3.select('#network-thld').text(g.edges.networkThreshold);
+      component.graphEdges(d3.select('#graph-contents'), edgesToDraw);
+      component.graphNodes(d3.select('#graph-contents'), g.nodes.records);
+      d3.select('#show-struct').property('checked', false);  // for fast loading
+      force.setForce(
+        g.nodes.records, edgesToDraw, force.tick,
+        () => {
+          force.end();
+          saveSnapshot();
+        });
+      if (g.edges.hasOwnProperty('snapshot')) {
+        resume(g.edges.snapshot);
+        interaction.stickNodes();
+      } else {
+        interaction.restart();
+      }
+      d3.select('#graph-contents').style('opacity', 1e-6)
+        .transition()
+        .duration(1000)
+        .style('opacity', 1);
+    });
 }
 
 
 function render() {
-  return getCurrentGraph().then(g => {
-    g.nodes.records.forEach(e => { delete e._mol; });
-    dialog.graphConfigDialog(g.edges, thld => {
-      return store.updateTableAttribute(g.edges.id, 'networkThreshold', thld)
-        .then(saveSnapshot).then(start);
-    });
-    dialog.communityDialog(query => {
-      const nodeIds = g.nodes.records.map(e => e._index);
-      const visibleEdges = g.edges.records
-        .filter(e => e.weight >= g.edges.networkThreshold);
-      const comm = community.communityDetection(
-        nodeIds, visibleEdges, {nulliso: query.nulliso}
-      );
-      const mapping = {
-        key: '_index',
-        column: {
-          key: query.name, name: query.name, sort: 'numeric', visible: true
-        },
-        mapping: comm
-      };
-      store.joinColumn(mapping, g.nodes.id)
-        .then(() => {
-          const snapshot = takeSnapshot();
-          snapshot.nodeColor.column = query.name;
-          snapshot.nodeColor.scale = d3scale.colorPresets
-            .find(e => e.name === 'Categories').scale;
-          const currentId = store.getGlobalConfig('urlQuery').id;
-          return store.updateTableAttribute(currentId, 'snapshot', snapshot)
-            .then(() => console.info('snapshot saved'));
-        }).then(render);
-    });
-    control.mainControlBox();
-    control.nodeColorControlBox(g.nodes.columns);
-    control.nodeSizeControlBox(g.nodes.columns);
-    control.nodeLabelControlBox(g.nodes.columns);
-    control.edgeControlBox();
-    d3.select('#stick-nodes')
-      .on('change', function() {
-        d3form.checked(this) === true ? interaction.stickNodes() : interaction.relax();
+  return getGraph()
+    .then(g => {
+      g.nodes.records.forEach(e => { delete e._mol; });
+      dialog.graphConfigDialog(
+          g.edges.networkThreshold, g.edges.query.threshold, thld => {
+        return store.updateTableAttribute('networkThreshold', thld)
+          .then(saveSnapshot)
+          .then(start);
       });
-    d3.select('#nodetable').attr('href', `datatable.html?id=${g.edges.nodeTableId}`);
-    d3.select('#rename')
-      .on('click', () => {
-        d3.select('#prompt-title').text('Rename table');
-        d3.select('#prompt-label').text('New name');
-        d3.select('#prompt-input').attr('value', g.edges.name);
-        d3.select('#prompt-submit')
-          .on('click', () => {
-            const name = d3form.value('#prompt-input');
-            return store.updateTableAttribute(g.edges.id, 'name', name)
-              .then(store.getCurrentTable)
-              .then(t => header.renderStatus(t, refresh, abort));
-          });
+      dialog.communityDialog(query => {
+        const nodeIds = g.nodes.records.map(e => e._index);
+        const visibleEdges = g.edges.records
+          .filter(e => e.weight >= g.edges.networkThreshold);
+        const comm = community.communityDetection(
+          nodeIds, visibleEdges, {nulliso: query.nulliso}
+        );
+        const mapping = {
+          key: '_index',
+          field: {
+            key: query.name, name: query.name, sort: 'numeric', visible: true
+          },
+          mapping: comm
+        };
+        store.joinFields(mapping, g.nodes.id)
+          .then(() => {
+            const snapshot = takeSnapshot();
+            snapshot.nodeColor.field = query.name;
+            snapshot.nodeColor.scale = d3scale.colorPresets
+              .find(e => e.name === 'Categories').scale;
+            return store.updateTableAttribute('snapshot', snapshot)
+              .then(() => console.info('snapshot saved'));
+          }).then(render);
       });
-    return start();
-  });
+      control.mainControlBox();
+      control.nodeColorControlBox(g.nodes.fields);
+      control.nodeSizeControlBox(g.nodes.fields);
+      control.nodeLabelControlBox(g.nodes.fields);
+      control.edgeControlBox();
+      d3.select('#stick-nodes')
+        .on('change', function() {
+          d3form.checked(this) === true ? interaction.stickNodes() : interaction.relax();
+        });
+      d3.select('#nodetable').attr('href', `datatable.html?id=${g.edges.nodeTableId}`);
+      d3.select('#rename')
+        .on('click', () => {
+          d3.select('#prompt-title').text('Rename table');
+          d3.select('#prompt-label').text('New name');
+          d3.select('#prompt-input').attr('value', g.edges.name);
+          d3.select('#prompt-submit')
+            .on('click', () => {
+              const name = d3form.value('#prompt-input');
+              return store.updateTableAttribute('name', name)
+                .then(() => store.getTable())  // updateTableAttribute returns 1
+                .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
+            });
+        });
+      return start();
+    });
 }
 
 
-function fetch_(command) {
-  return store.getCurrentTable().then(edges => {
-    if (!def.fetchable(edges)) return;
-    const query = {id: edges.id, command: command};
-    return fetcher.getJSON('res', query).then(store.updateTable);
-  });
-}
-
-
-function refresh() {
-  return fetch_('update').then(isUpdated => {
-    if (isUpdated !== undefined) return start();
-  });
-}
-
-
-function abort() {
-  return fetch_('abort').then(isUpdated => {
-    if (isUpdated !== undefined) return start();
-  });
-}
-
-
-function loadNewGraph(grf) {
+function loadNewGraph(data) {
   return Promise.all([
-    store.insertTable(grf.nodes),
-    store.insertTable(grf.edges)
+    store.insertTable(data.nodes),
+    store.insertTable(data.edges)
   ]).then(() => {
-    window.location = `graph.html?id=${grf.edges.id}`;
+    window.location = `graph.html?id=${data.edges.id}`;
   });
+}
+
+
+// TODO: duplicate of datatable.fetchResults
+function fetchResults(command='update') {
+  return store.getTable()
+    .then(data => {
+      if (!def.ongoing(data)) return Promise.reject();
+      return data;
+    })
+    .then(data => {
+      const query = {id: data.id, command: command};
+      return fetcher.get('res', query)
+        .then(fetcher.json)
+        .then(store.updateTable, fetcher.error);
+    }, () => Promise.resolve());
 }
 
 
@@ -216,7 +214,7 @@ function run() {
     .on('click', () => {
       // Working copy of edges and nodes are modified by d3.force.
       // Load original data from store.
-      return getCurrentGraph().then(g => hfile.downloadJSON(g, g.edges.name));
+      return getGraph().then(g => hfile.downloadJSON(g, g.edges.name));
     });
   d3.select('#graph-field')
     .attr('viewBox', `0 0 ${force.fieldWidth} ${force.fieldHeight}`)
@@ -232,9 +230,9 @@ function run() {
       const file = document.getElementById('select-file').files[0];
       hfile.loadJSON(file).then(loadNewGraph);
     });
-  if (store.getGlobalConfig('urlQuery').hasOwnProperty('location')) {
-    const url = store.getGlobalConfig('urlQuery').location;
-    return hfile.fetchJSON(url)
+  // location parameter enables direct access to graph JSON via HTTP
+  if (win.URLQuery().hasOwnProperty('location')) {
+    return hfile.fetchJSON(win.URLQuery().location)
       .then(tbls => {
         return Promise.all([
           store.insertTable(tbls.nodes),
@@ -245,15 +243,16 @@ function run() {
         window.location = `graph.html?id=${id}`;
       });
   }
-  return loader.loader().then(() => {
-    if (store.getGlobalConfig('urlQuery').hasOwnProperty('id')) {
-      header.initializeWithData();
-      return fetch_('update').then(render);
-    } else {
-      header.initialize();
-      return Promise.resolve();
-    }
-  });
+  return loader.loader()
+    .then(() => {
+      if (win.URLQuery().hasOwnProperty('id')) {
+        header.initializeWithData();
+        return fetchResults('update').then(render);
+      } else {
+        header.initialize();
+        return Promise.resolve();
+      }
+    });
 }
 
 export default {

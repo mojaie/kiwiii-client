@@ -120,7 +120,7 @@ function formatNumbers(selection) {
   // DEPRECATED: no longer used
   selection.select('thead tr').selectAll('th')
     .each((col, colIdx) => {
-      if (!col.hasOwnProperty('digit') || col.digit === 'raw') return;
+      if (col.digit === 'raw') return;
       selection.select('tbody').selectAll('tr')
         .selectAll('td')
           .filter((d, i) => i === colIdx)

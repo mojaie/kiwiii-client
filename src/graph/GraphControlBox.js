@@ -12,7 +12,7 @@ import {default as cmp} from '../component/Component.js';
 function colorControlInput(id) {
   const data = {
     id: id,
-    column: d3form.optionData(`#${id}-col`)
+    field: d3form.optionData(`#${id}-col`)
   };
   const preset = d3form.optionData(`#${id}-preset`);
   if (preset.scale.scale === 'ordinal') {
@@ -67,7 +67,7 @@ function sizeControlInput(id) {
 
 function nodeSizeControlInput() {
   const data = sizeControlInput('size');
-  data.column = d3form.optionData('#size-col');
+  data.field = d3form.optionData('#size-col');
   return data;
 }
 
@@ -96,13 +96,13 @@ function edgeControlInput() {
 
 function updateNodeColor(data) {
   d3.selectAll('.node').select('.node-symbol')
-    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.column.key]));
+    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
 }
 
 
 function updateNodeSize(data) {
   d3.selectAll('.node').select('.node-symbol')
-    .attr('r', d => d3scale.scaleFunction(data.scale)(d[data.column.key]));
+    .attr('r', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
 }
 
 
@@ -116,12 +116,12 @@ function updateNodeLabel(data) {
   d3.selectAll('.node').select('.node-label')
     .text(d => {
       if (!d.hasOwnProperty(data.text)) return '';
-      if (!data.column.hasOwnProperty('digit') || data.column.digit === 'raw') return d[data.text];
-      return fmt.formatNum(d[data.text], data.column.digit);
+      if (!data.field.digit === 'raw') return d[data.text];
+      return fmt.formatNum(d[data.text], data.field.digit);
     })
     .attr('font-size', data.size)
     .attr('visibility', data.visible ? 'inherit' : 'hidden')
-    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.column.key]));
+    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
 }
 
 
@@ -203,8 +203,8 @@ function updateControl(data) {
   d3.select(`#${id}-visible`).attr('checked', data.visible ? 'checked' : null);
   d3.select(`#${id}-text`).property('value', data.text);
   d3.select(`#${id}-size`).property('value', data.size);
-  if (data.hasOwnProperty('column')) {
-    d3.select(`#${id}-col`).property('value', data.column.key);
+  if (data.hasOwnProperty('field')) {
+    d3.select(`#${id}-col`).property('value', data.field.key);
   }
   if (data.hasOwnProperty('label')) {
     d3.select(`#${id}-label-visible`)
@@ -229,9 +229,9 @@ function mainControlBox() {
 }
 
 
-function colorControlBox(columns, id) {
+function colorControlBox(fields, id) {
   d3.select(`#${id}-col`)
-    .call(cmp.selectOptions, columns, d => d.key, d => d.name);
+    .call(cmp.selectOptions, fields, d => d.key, d => d.name);
   d3.select(`#${id}-preset`)
     .call(cmp.selectOptions, d3scale.colorPresets, d => d.name, d => d.name)
     .on('change', function() {
@@ -249,8 +249,8 @@ function colorControlBox(columns, id) {
 }
 
 
-function nodeColorControlBox(columns) {
-  const textCols = columns.filter(e => e.sort !== 'none');
+function nodeColorControlBox(fields) {
+  const textCols = fields.filter(e => e.sort !== 'none');
   colorControlBox(textCols, 'color');
   d3.selectAll('.color-update')
     .on('change', () => {
@@ -263,8 +263,8 @@ function nodeColorControlBox(columns) {
 }
 
 
-function nodeLabelControlBox(columns) {
-  const textCols = columns.filter(e => e.sort !== 'none');
+function nodeLabelControlBox(fields) {
+  const textCols = fields.filter(e => e.sort !== 'none');
   d3.select('#label-text')
     .call(cmp.selectOptions, textCols, d => d.key, d => d.name);
   colorControlBox(textCols, 'label');
@@ -296,8 +296,8 @@ function sizeControlBox(presets, id) {
 }
 
 
-function nodeSizeControlBox(columns) {
-  const numCols = columns.filter(e => e.sort === 'numeric');
+function nodeSizeControlBox(fields) {
+  const numCols = fields.filter(e => e.sort === 'numeric');
   d3.select(`#size-col`)
     .call(cmp.selectOptions, numCols, d => d.key, d => d.name);
   sizeControlBox(d3scale.sizePresets, 'size');

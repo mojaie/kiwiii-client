@@ -347,30 +347,30 @@ function graphDialog(callback) {
   d3.select('#graph-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
-      const method = d3form.value('#graph-method');
+      const measure = d3form.value('#graph-measure');
       const params = {
-        measure: d3form.value('#graph-measure'),
+        measure: measure,
         threshold: d3form.valueFloat('#graph-thld'),
         ignoreHs: d3form.checked('#graph-ignoreh'),
-        diameter: method === 'gls' ? d3form.valueInt('#graph-diam') : null,
-        maxTreeSize: method === 'gls' ? d3form.valueInt('#graph-tree') : null,
-        molSizeCutoff: method === 'gls' ? d3form.valueInt('#graph-skip') : null,
-        timeout: method === 'rdfmcs' ? d3form.valueInt('#graph-timeout') : null
+        diameter: measure === 'gls' ? d3form.valueInt('#graph-diam') : null,
+        maxTreeSize: measure === 'gls' ? d3form.valueInt('#graph-tree') : null,
+        molSizeCutoff: measure === 'gls' ? d3form.valueInt('#graph-skip') : null,
+        timeout: measure === 'rdfmcs' ? d3form.valueInt('#graph-timeout') : null
       };
       callback(params);
     });
 }
 
 
-function graphConfigDialog(edges, callback) {
+function graphConfigDialog(currentThld, minThld, callback) {
   d3.select('#graphconfig-thld')
-    .attr('value', edges.networkThreshold)
+    .attr('value', currentThld)
     .attr('max', 1.0)
-    .attr('min', edges.query.threshold);
+    .attr('min', minThld);
   d3.select('#graphconfig-submit')
     .on('click', () => {
       const newThld = d3form.valueFloat('#graphconfig-thld');
-      if (newThld < edges.query.threshold) return;  // TODO: fool proof
+      if (newThld < minThld) return;  // TODO: fool proof
       callback(newThld);
     });
 }

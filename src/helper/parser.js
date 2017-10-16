@@ -39,6 +39,12 @@ function queryURL(query) {
 }
 
 
+// TODO: not used
+function capitalized(str) {
+  return str.replace(/(?:^|\s)\S/g, e => e.toUpperCase());
+}
+
+
 export default {
-  queryFormData, queryURL, getSDFPropList
+  getSDFPropList
 };
