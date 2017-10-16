@@ -15,9 +15,9 @@ import {default as cmp} from './Component.js';
 import {default as fetcher} from '../fetcher.js';
 
 
-function pickDialog(rsrc, callback) {
+function pickDialog(resources, callback) {
   d3.select('#pick-target')
-    .call(cmp.selectOptions, rsrc, d => d.id, d => d.name)
+    .call(cmp.selectOptions, resources, d => d.id, d => d.name)
     .on('change', function () {
       const rsrctbl = d3form.optionData(this);
       d3.select('#pick-queryarea').text(rsrctbl.placeholders.ID);
@@ -32,14 +32,16 @@ function pickDialog(rsrc, callback) {
         key: 'id',
         values: d3form.textareaLines('#pick-queryarea')
       };
-      return fetcher.get('run', query).then(fetcher.json).then(callback);
+      return fetcher.get('run', query)
+        .then(fetcher.json)
+        .then(callback, fetcher.error);
     });
 }
 
 
-function propDialog(rsrc, callback) {
+function propDialog(resources, callback) {
   d3.select('#prop-targets')
-    .call(cmp.checkboxList, rsrc, 'targets', d => d.id, d => d.name)
+    .call(cmp.checkboxList, resources, 'targets', d => d.id, d => d.name)
     .on('change', function () {
       const cols = KArray.from(d3form.checkboxData('#prop-targets'))
         .map(d => d.fields)
@@ -57,16 +59,18 @@ function propDialog(rsrc, callback) {
         values: d3form.textareaLines('#prop-queryarea'),
         operator: d3form.value('#prop-operator')
       };
-      return fetcher.get('async', query).then(fetcher.json).then(callback);
+      return fetcher.get('async', query)
+        .then(fetcher.json)
+        .then(callback, fetcher.error);
     });
 }
 
 
-function structDialog(rsrc, callback) {
+function structDialog(resources, callback) {
   d3.select('#struct-qsrc')
-    .call(cmp.selectOptions, rsrc, d => d.id, d => d.name);
+    .call(cmp.selectOptions, resources, d => d.id, d => d.name);
   d3.select('#struct-targets')
-    .call(cmp.checkboxList, rsrc, 'targets', d => d.id, d => d.name);
+    .call(cmp.checkboxList, resources, 'targets', d => d.id, d => d.name);
   store.getAppSetting('rdk').then(rdk => {
     d3.select('#struct-method').selectAll('option.rd')
       .attr('disabled', rdk ? null : 'disabled');
@@ -108,14 +112,13 @@ function structDialog(rsrc, callback) {
         value: fmt === 'molfile'
           ? d3form.value('#struct-queryarea') : d3form.textareaLines('#struct-queryarea')[0],
       };
-      return fetcher.get('strprev', query).then(fetcher.text)
-        .then(res => d3.select('#struct-image').html(res));
+      return fetcher.get('strprev', query)
+        .then(fetcher.text)
+        .then(res => d3.select('#struct-image').html(res), fetcher.error);
     });
   d3.select('#struct-submit')
     .on('click', () => {
-      // TODO: mthdop
       const method = d3form.value('#struct-method');
-
       d3.select('#loading-circle').style('display', 'inline');
       const fmt = d3form.value('#struct-format');
       const query = {
@@ -137,7 +140,9 @@ function structDialog(rsrc, callback) {
           timeout: method === 'rdfmcs' ? d3form.valueInt('#struct-timeout') : null
         }
       };
-      return fetcher.get('async', query).then(fetcher.json).then(callback);
+      return fetcher.get('async', query)
+        .then(fetcher.json)
+        .then(callback, fetcher.error);
     });
 }
 
@@ -172,12 +177,14 @@ function sdfDialog(callback) {
       const formData = new FormData();
       formData.append('contents', d3form.firstFile('#sdf-file'));
       formData.append('params', JSON.stringify(params));
-      return fetcher.postFile('sdfin', formData).then(callback);
+      return fetcher.post('sdfin', formData)
+        .then(fetcher.json)
+        .then(callback, fetcher.error);
     });
 }
 
 
-function columnDialog(data, callback) {
+function columnDialog(dataFields, callback) {
   const table = {
     fields: [
       {key: 'name', sortType: 'text', visible: true},
@@ -186,7 +193,7 @@ function columnDialog(data, callback) {
       {key: 'digit', sortType: 'none', valueType: 'control', visible: true}
     ]
   };
-  const records = data.fields.map((e, i) => {
+  const records = dataFields.map((e, i) => {
     return {
       key: e.key,
       name: e.name,
@@ -227,56 +234,56 @@ function columnDialog(data, callback) {
         sortTypes: d3form.optionValues('.column-sort'),
         digits: d3form.optionValues('.column-digit')
       };
-      return store.setFieldProperties(query).then(callback);
+      return store.setFieldProperties(query)
+        .then(callback);
     });
 }
 
 
-function joinDialog(data, rcds, callback) {
+function fieldFetchDialog(dataFields, resources, callback) {
   // Prevent implicit submission
   document.getElementById('join-search')
     .addEventListener('keypress', event => {
       if (event.keyCode === 13) event.preventDefault();
     });
-  return store.getResources().then(rsrcs => {
-    const shownCols = data.fields.map(e => e.key);
-    d3.select('#join-keys')
-      .call(cmp.checkboxList, KArray.from(rsrcs).unique('key'), 'keys',
-            d => d.key, d => d.name)
-      .selectAll('li')
-      .each(function(d) { // disable already shown columns
-        const ex = shownCols.includes(d.key);
-        d3.select(this).selectAll('label').select('input')
-          .property('checked', ex)
-          .attr('disabled', ex ? 'disabled' : null);
-      });
-    d3.select('#join-search').on('keyup', function () {
+  const dataKeys = dataFields.map(e => e.key);
+  const resourceFields = KArray.from(resources.map(e => e.fields))
+    .extend().unique('key').filter(e => e.key !== 'id');
+  d3.select('#join-keys')
+    .call(cmp.checkboxList, resourceFields, 'keys', d => d.key, d => d.name)
+    .selectAll('li')
+    .each(function(d) { // disable already shown columns
+      d3.select(this).selectAll('label').select('input')
+        .property('checked', dataKeys.includes(d.key))
+        .attr('disabled', dataKeys.includes(d.key) ? 'disabled' : null);
+    });
+  d3.select('#join-search')
+    .on('keyup', function () {
       const match = d => fmt.partialMatch(d3form.value(this), d.name);
       d3.select('#join-keys').selectAll('li')
         .style('visibility', d => match(d) ? null : 'hidden')
         .style('position', d => match(d) ? null : 'absolute');
     });
-    d3.select('#join-submit').on('click', () => {
+  d3.select('#join-submit')
+    .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
-      const selectedCols = d3form.checkboxValues('#join-keys');
-      const mpgs = rsrcs
-        .filter(col => !shownCols.includes(col.key))
-        .filter(col => selectedCols.includes(col.key))
-        .map(col => {
-          const ids = rcds.map(row => row.ID);
-          const api = store.getFetcher(col.domain);
-          return api.getMapping(ids, col);
-        });
-      return Promise.all(mpgs).then(res => {
-        // callback(res.filter(e => Object.keys(e.mapping).length !== 0));
-        callback(res);
-      });
-    });
+      const selected = d3form.checkboxValues('#join-keys');
+      const queryFieldKeys = resources.map(e => e.key)
+        .filter(e => !dataKeys.includes(e))
+        .filter(e => selected.includes(e));
+      const query = {
+        type: 'mapping',
+        targets: queryFieldKeys
+      };
+    return fetcher.get('run', query)
+      .then(fetcher.json)
+      .then(callback, fetcher.error);
   });
 }
 
 
-function importColDialog(tbl, callback) {
+function fieldFileDialog(callback) {
+  // TODO: need to refactor
   d3.select('#importcol-file')
     .on('change', () => {
       const file = document.getElementById('importcol-file').files[0];
@@ -317,15 +324,15 @@ function importColDialog(tbl, callback) {
             ps.push(p);
           });
         });
-        Promise.all(ps).then(() => callback([mapping]));
+        Promise.all(ps).then(() => callback(mapping));
       } else {
-        callback([mapping]);
+        callback(mapping);
       }
     });
 }
 
 
-function graphDialog(tbl, rcds, callback) {
+function graphDialog(callback) {
   store.getAppSetting('rdk').then(rdk => {
     d3.select('#graph-measure').selectAll('option.rd')
       .attr('disabled', rdk ? null : 'disabled');
@@ -340,20 +347,17 @@ function graphDialog(tbl, rcds, callback) {
   d3.select('#graph-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
-      const mthdop = d3.select(d3.select('#graph-measure').node().selectedOptions[0]);
+      const method = d3form.value('#graph-method');
       const params = {
         measure: d3form.value('#graph-measure'),
         threshold: d3form.valueFloat('#graph-thld'),
         ignoreHs: d3form.checked('#graph-ignoreh'),
-        diameter: mthdop.node().value === 'gls' ? d3form.valueInt('#graph-diam') : null,
-        maxTreeSize: mthdop.node().value === 'gls' ? d3form.valueInt('#graph-tree') : null,
-        molSizeCutoff: mthdop.node().value === 'gls' ? d3form.valueInt('#graph-skip') : null,
-        timeout: mthdop.classed('rd') ? d3form.valueInt('#graph-timeout') : null
+        diameter: method === 'gls' ? d3form.valueInt('#graph-diam') : null,
+        maxTreeSize: method === 'gls' ? d3form.valueInt('#graph-tree') : null,
+        molSizeCutoff: method === 'gls' ? d3form.valueInt('#graph-skip') : null,
+        timeout: method === 'rdfmcs' ? d3form.valueInt('#graph-timeout') : null
       };
-      const formData = new FormData();
-      formData.append('contents', {json: new Blob([JSON.stringify(tbl)])});
-      formData.append('params', JSON.stringify(params));
-      return fetcher.postFile('simnet', formData).then(callback);
+      callback(params);
     });
 }
 
@@ -387,6 +391,6 @@ function communityDialog(callback) {
 
 export default {
   pickDialog, propDialog, structDialog, sdfDialog,
-  columnDialog, joinDialog, importColDialog, graphDialog,
+  columnDialog, fieldFetchDialog, fieldFileDialog, graphDialog,
   graphConfigDialog, communityDialog
 };

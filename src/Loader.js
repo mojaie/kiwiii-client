@@ -51,9 +51,9 @@ function loader() {
             store.setResources(schema.resources),
             store.setAppSetting('templates', schema.templates),
             store.setAppSetting('rdkit', serverStatus.rdkit)
-          ]);
-        })
-        .then(() => Promise.resolve(serverStatus));
+          ])
+          .then(() => Promise.resolve(serverStatus));
+        }, fetcher.error);
     }
   });
 }

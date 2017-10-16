@@ -33,10 +33,10 @@ function updateChem(resources) {
           {key: 'value', sort: 'text', visible: true}
         ]
       };
-    d3.select('#properties').call(cmp.createTable, data)
-      .call(cmp.updateTableRecords, records, d => d.key);
-    return rcd;
-  });
+      d3.select('#properties').call(cmp.createTable, data)
+        .call(cmp.updateTableRecords, records, d => d.key);
+      return rcd;
+    }, fetcher.error);
 }
 
 
@@ -70,7 +70,7 @@ function updateChemAliases(resources, qrcd) {
       };
       d3.select('#aliases').call(cmp.createTable, data)
         .call(cmp.updateTableRecords, records, d => d.id);
-    });
+    }, fetcher.error);
 }
 
 
@@ -88,8 +88,6 @@ function updateActivities() {
       .style('visibility', d => match(d) ? null : 'hidden')
       .style('position', d => match(d) ? null : 'absolute');
   });
-  /*d3.select('#results').call(cmp.createTable, tbl)
-    .call(cmp.addSort);*/
   const query = {
     type: 'profile',
     id: compound
@@ -107,36 +105,9 @@ function updateActivities() {
         ]
       };
       d3.select('#results').call(cmp.createTable, table)
-        .call(cmp.updateTableRecords, res.records, d => d.id);
-    });
-
-  /*
-  const tasks = store.dataFetcherInstances()
-    .filter(fetcher => fetcher.available === true)
-    .map(fetcher => {
-      return fetcher.getRecordsByCompound(compound).then(res => {
-        const rcds = KArray.from(res.records.map(rcd => {
-          return Object.entries(rcd).map(r => {
-            const rcdKey = r[0];
-            const rcdValue = r[1];
-            const sourceKey = def.dataSourceId(fetcher.domain, rcd.source, rcdKey);
-            const sourceCol = activities.find(e => e.key === sourceKey);
-            if (sourceCol === undefined) return;  // found in database but not annotated
-            if (sourceCol.valueType === 'flag' && rcdValue === 0) return;  // empty flag
-            return {
-              name: sourceCol.name,
-              tags: sourceCol.tags,
-              valueType: sourceCol.valueType,
-              value: d3.format('.3c')(rcdValue),
-              remarks: ''
-            };
-          }).filter(e => e !== undefined);
-        })).extend();
-        cmp.appendTableRows(d3.select('#results'), rcds, undefined);
-      });
-    });
-  return Promise.all(tasks);
-  */
+        .call(cmp.updateTableRecords, res.records, d => d.id)
+        .call(cmp.addSort);
+    }, fetcher.error);
 }
 
 

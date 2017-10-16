@@ -46,6 +46,12 @@ function post(url, formdata) {
 }
 
 
+function error(err) {
+  console.error(err);
+  return null;
+}
+
+
 export default {
-  get, json, text, blob, post
+  get, json, text, blob, post, error
 };

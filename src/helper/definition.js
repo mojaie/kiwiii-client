@@ -13,15 +13,6 @@ function capitalized(str) {
 const defaultHiddenFields = ['_mw', '_mw_wo_sw', '_logp', '_formula', '_nonH'];
 
 
-function setDefaultFieldProperties(fields) {
-  return fields.map(e => {
-    e.visible = !defaultHiddenFields.includes(e.key);
-    e.digit = 'raw';
-    return e;
-  });
-}
-
-
 function ongoing(data) {
   return ['running', 'ready'].includes(data.status);
 }
@@ -34,6 +25,6 @@ function conclike(col) {
 
 
 export default {
-  setDefaultFieldProperties,
+  defaultHiddenFields,
   capitalized, ongoing, conclike
 };

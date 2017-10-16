@@ -1,4 +1,5 @@
 
+import {default as def} from '../helper/definition.js';
 import {default as win} from '../helper/window.js';
 import {default as mapper} from '../helper/mapper.js';
 import {default as store} from './IDBStore.js';
@@ -34,19 +35,19 @@ function getTablesByDataType(type) {
 }
 
 
-function getTable(id) {
+function getTable(id=win.URLQuery().id) {
   return store.getItemById(id);
 }
 
 
-function getRecords(id) {
+function getRecords(id=win.URLQuery().id) {
   return store.getItemById(id)
     .then(table => table.records);
 }
 
 
-function setFieldProperties(updates) {
-  return store.updateItem(win.URLQuery().id, item => {
+function setFieldProperties(updates, id=win.URLQuery().id) {
+  return store.updateItem(id, item => {
     item.fields.forEach((fd, i) => {
       fd.visible = updates.visibles.includes(fd.key);
       fd.sortType = updates.sortTypes[i];
@@ -63,26 +64,33 @@ function joinFields(mapping, id=win.URLQuery().id) {
 }
 
 
-function updateTableAttribute(id, key, value) {
+function updateTableAttribute(key, value, id=win.URLQuery().id) {
   return store.updateItem(id, item => {
     item[key] = value;
   });
 }
 
+function setDefaultFieldProperties(data) {
+  data.fields.forEach(e => {
+    e.visible = !def.defaultHiddenFields.includes(e.key);
+    e.digit = 'raw';
+  });
+  return data;
+}
+
 
 function insertTable(data) {
-  return store.putItem(data);
+  return store.putItem(setDefaultFieldProperties(data));
 }
 
 
 function updateTable(data) {
-  if (data === undefined) return Promise.resolve(null);  // No update
   if (data.status === 'failure') {  // No data found on server
-    return updateTableAttribute(data.id, 'status', 'failure');
+    return updateTableAttribute('status', 'failure', data.id);
   }
   // update
   return store.updateItem(data.id, item => {
-    Object.assign(item, data);
+    Object.assign(item, setDefaultFieldProperties(data));
   });
 }
 

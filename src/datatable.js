@@ -23,93 +23,98 @@ function idLink(rcds, idKey) {
 }
 
 
-function renderTableContents(tbl) {
-  return store.getRecords(win.URLQuery().id)
-    .then(rcds => {
-      const copied = JSON.parse(JSON.stringify(rcds));  // deep copy
-      idLink(copied, 'id');
-      d3.select('#datatable')
-        .call(grid.createDataGrid, tbl)
-        .call(grid.dataGridRecords, copied, d => d._index)
-        .call(grid.addSort, copied, d => d._index);
-      dialog.graphDialog(tbl, rcds, res => {
-        res.networkThreshold = res.query.threshold;
-        return store.insertTable(res).then(() => {
-          d3.select('#loading-circle').style('display', 'none');
-          window.open(`graph.html?id=${res.id}`, '_blank');
+function render() {
+  return store.getTable()
+    .then(data => {
+      dialog.columnDialog(data.fields, render);
+      dialog.fieldFileDialog(mapping => {
+        return store.joinFields(mapping).then(render);
+      });
+      store.getResources().then(rsrc => {
+        const actres = rsrc.filter(e => e.domain === 'activity');
+        dialog.fieldFetchDialog(data.fields, actres, mapping => {
+          return store.joinFields(mapping).then(render);
         });
       });
-      dialog.joinDialog(tbl, rcds, mappings => {
-        return Promise.all(mappings.map(e => store.joinColumn(e))).then(render);
+      header.renderStatus(data, fetchResults, () => fetchResults('abort'));
+      d3.select('#rename')
+        .on('click', () => {
+          d3.select('#prompt-title').text('Rename table');
+          d3.select('#prompt-label').text('New name');
+          d3.select('#prompt-input').attr('value', data.name);
+          d3.select('#prompt-submit')
+            .on('click', () => {
+              const name = d3form.value('#prompt-input');
+              return store.updateTableAttribute('name', name, data.id)
+                .then(() => store.getTable()) // updateTableAttribute returns 1
+                .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
+            });
+        });
+      // Following operations use data.records
+      const copied = JSON.parse(JSON.stringify(data.records));  // deep copy
+      idLink(copied, 'id');
+      d3.select('#datatable')
+        .call(grid.createDataGrid, data)
+        .call(grid.dataGridRecords, copied, d => d._index)
+        .call(grid.addSort, copied, d => d._index);
+      dialog.graphDialog(params => {
+        const formData = new FormData();
+        formData.append('contents', new Blob([JSON.stringify(data)]));
+        formData.append('params', JSON.stringify(params));
+        return fetcher.post('simnet', formData)
+          .then(fetcher.json)
+          .then(json => {
+            json.networkThreshold = json.query.threshold;
+            return store.insertTable(json).then(() => {
+              d3.select('#loading-circle').style('display', 'none');
+              window.open(`graph.html?id=${json.id}`, '_blank');
+            });
+          }, fetcher.error);
       });
+      d3.select('#export')
+        .on('click', () => hfile.downloadJSON(data, data.name, true));
+      d3.select('#excel')
+        .on('click', () => {
+          const formData = new FormData();
+          formData.append('contents', new Blob([JSON.stringify(data)]));
+          return fetcher.post('xlsx', formData)
+            .then(fetcher.blob)
+            .then(blob => hfile.downloadDataFile(blob, `${data.name}.xlsx`),
+                  fetcher.error);
+        });
+      d3.select('#sdfile')
+        .on('click', () => {
+          const formData = new FormData();
+          formData.append('contents', new Blob([JSON.stringify(data)]));
+          return fetcher.post('sdfout', formData)
+            .then(fetcher.text)
+            .then(text => hfile.downloadDataFile(text, `${data.name}.sdf`),
+                  fetcher.error);
+        });
     });
-}
-
-
-function render() {
-  return store.getTable(win.URLQuery().id).then(tbl => {
-    dialog.columnDialog(tbl, render);
-    dialog.importColDialog(tbl, colMaps => {
-      const joined = colMaps.map(mp => store.joinFields(mp));
-      return Promise.all(joined).then(render);
-    });
-    header.renderStatus(tbl, fetchResults, () => fetchResults('abort'));
-    d3.select('#rename')
-      .on('click', () => {
-        d3.select('#prompt-title').text('Rename table');
-        d3.select('#prompt-label').text('New name');
-        d3.select('#prompt-input').attr('value', tbl.name);
-        d3.select('#prompt-submit')
-          .on('click', () => {
-            const name = d3form.value('#prompt-input');
-            return store.updateTableAttribute(tbl.id, 'name', name)
-              .then(store.getCurrentTable)
-              .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
-          });
-      });
-    d3.select('#export')
-      .on('click', () => hfile.downloadJSON(tbl, tbl.name, true));
-    d3.select('#excel')
-      .on('click', () => {
-        const query = {json: new Blob([JSON.stringify(tbl)])};
-        return fetcher.get('xlsx', query)
-          .then(fetcher.blob)
-          .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.xlsx`));
-      });
-    d3.select('#sdfile')
-      .on('click', () => {
-        const query = {json: new Blob([JSON.stringify(tbl)])};
-        return fetcher.get('sdfout', query)
-          .then(fetcher.text)
-          .then(xhr => hfile.downloadDataFile(xhr, `${tbl.name}.sdf`));
-      });
-    return renderTableContents(tbl);
-  });
 }
 
 
 function loadNewTable(data) {
-  data.fields = def.setDefaultFieldProperties(data.fields);
-  return store.insertTable(data).then(() => {
-    window.location = `datatable.html?id=${data.id}`;
-  });
+  return store.insertTable(data)
+    .then(() => {
+      window.location = `datatable.html?id=${data.id}`;
+    });
 }
 
 
 function fetchResults(command='update') {
-  return store.getTable(win.URLQuery().id)
-    .then(data => def.ongoing(data))
-    .then(hasUpdate => {
-      if (!hasUpdate) return Promise.resolve();
-      const query = {id: win.URLQuery().id, command: command};
+  return store.getTable()
+    .then(data => {
+      if (!def.ongoing(data)) return Promise.reject();
+      return data;
+    })
+    .then(data => {
+      const query = {id: data.id, command: command};
       return fetcher.get('res', query)
         .then(fetcher.json)
-        .then(data => {
-          data.fields = def.setDefaultFieldProperties(data.fields);
-          return data;
-        })
-        .then(store.updateTable);
-    });
+        .then(store.updateTable, fetcher.error);
+    }, () => Promise.resolve());
 }
 
 
