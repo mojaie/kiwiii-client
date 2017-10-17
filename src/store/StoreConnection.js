@@ -1,17 +1,24 @@
 
 import {default as def} from '../helper/definition.js';
-import {default as win} from '../helper/window.js';
 import {default as mapper} from '../helper/mapper.js';
 import {default as store} from './IDBStore.js';
 
 
 function getAppSetting(key) {
-  return store.getAppSetting(key);
+  return store.getAppSetting(key)
+    .catch(err => {
+      console.error(`Unexpected key: ${key}`);
+      Promise.reject(err);
+    });
 }
 
 
 function setAppSetting(key, value) {
-  return store.putAppSetting(key, value);
+  return store.putAppSetting(key, value)
+    .catch(err => {
+      console.error(`Unexpected key: ${key} or value: ${value}`);
+      Promise.reject(err);
+    });
 }
 
 
@@ -21,7 +28,11 @@ function getResources() {
 
 
 function setResources(rsrcs) {
-  return store.putResources(rsrcs);
+  return store.putResources(rsrcs)
+    .catch(err => {
+      console.error(`Unexpected resources: ${rsrcs}`);
+      Promise.reject(err);
+    });
 }
 
 
@@ -31,42 +42,56 @@ function getAllTables() {
 
 
 function getTablesByDataType(type) {
-  return store.getItemsByDataType(type);
+  return store.getItemsByDataType(type)
+    .catch(err => {
+      console.error(`Unexpected dataType: ${type}`);
+      Promise.reject(err);
+    });
 }
 
 
-function getTable(id=win.URLQuery().id) {
-  return store.getItemById(id);
-}
-
-
-function getRecords(id=win.URLQuery().id) {
+function getTable(id) {
   return store.getItemById(id)
-    .then(table => table.records);
+    .catch(err => {
+      console.error(`Unexpected table ID: ${id}`);
+      Promise.reject(err);
+    });
 }
 
 
-function setFieldProperties(updates, id=win.URLQuery().id) {
+function setFieldProperties(id, updates) {
   return store.updateItem(id, item => {
     item.fields.forEach((fd, i) => {
       fd.visible = updates.visibles.includes(fd.key);
       fd.sortType = updates.sortTypes[i];
       fd.digit = updates.digits[i];
     });
+  })
+  .catch(err => {
+    console.error(`Unexpected table ID: ${id} or updates: ${updates}`);
+    Promise.reject(err);
   });
 }
 
 
-function joinFields(mapping, id=win.URLQuery().id) {
+function joinFields(id, mapping) {
   return store.updateItem(id, item => {
     mapper.apply(item, mapping);
+  })
+  .catch(err => {
+    console.error(`Unexpected table ID: ${id} or mapping: ${mapping}`);
+    Promise.reject(err);
   });
 }
 
 
-function updateTableAttribute(key, value, id=win.URLQuery().id) {
+function updateTableAttribute(id, key, value) {
   return store.updateItem(id, item => {
     item[key] = value;
+  })
+  .catch(err => {
+    console.error(`Unexpected table ID: ${id}, key: ${key} or value: ${value}`);
+    Promise.reject(err);
   });
 }
 
@@ -80,13 +105,17 @@ function setDefaultFieldProperties(data) {
 
 
 function insertTable(data) {
-  return store.putItem(setDefaultFieldProperties(data));
+  return store.putItem(setDefaultFieldProperties(data))
+    .catch(err => {
+      console.error(`Unexpected data: ${data}`);
+      Promise.reject(err);
+    });
 }
 
 
 function updateTable(data) {
   if (data.status === 'failure') {  // No data found on server
-    return updateTableAttribute('status', 'failure', data.id);
+    return updateTableAttribute(data.id, 'status', 'failure');
   }
   // update
   return store.updateItem(data.id, item => {
@@ -96,7 +125,11 @@ function updateTable(data) {
 
 
 function deleteTable(id) {
-  return store.deleteItem(id);
+  return store.deleteItem(id)
+    .catch(err => {
+      console.error(`Unexpected table ID: ${id}`);
+      Promise.reject(err);
+    });
 }
 
 
@@ -107,7 +140,7 @@ function reset() {
 
 export default {
   getAppSetting, setAppSetting, getResources, setResources,
-  getAllTables, getTablesByDataType, getTable, getRecords,
+  getAllTables, getTablesByDataType, getTable,
   setFieldProperties, joinFields,
   updateTableAttribute, insertTable, updateTable,
   deleteTable, reset

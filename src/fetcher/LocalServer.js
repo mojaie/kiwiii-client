@@ -141,7 +141,7 @@ export class LocalServerChemical extends LocalServerActivity {
     let url;
     if (query.hasOwnProperty('command')) {
       url = 'res';
-    } else if (query.hasOwnProperty('nodeTableId')) {
+    } else if (query.hasOwnProperty('nodesID')) {
       url = 'simnet';
     } else if (["search", "filter", "chemsearch", "chemfilter", "exact"].includes(query.type)) {
       url = 'run';

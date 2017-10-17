@@ -54,7 +54,7 @@ function renderGraphStatus(data) {
   const table = {
     fields: [
       {key: 'name'},
-      {key: 'nodeTableId'},
+      {key: 'nodesID'},
       {key: 'status'},
       {key: 'resultCount'},
       {key: 'action', valueType: 'control'}

@@ -24,16 +24,16 @@ function idLink(rcds, idKey) {
 
 
 function render() {
-  return store.getTable()
+  return store.getTable(win.URLQuery().id)
     .then(data => {
       dialog.columnDialog(data.fields, render);
       dialog.fieldFileDialog(mapping => {
-        return store.joinFields(mapping).then(render);
+        return store.joinFields(win.URLQuery().id, mapping).then(render);
       });
       store.getResources().then(rsrc => {
         const actres = rsrc.filter(e => e.domain === 'activity');
         dialog.fieldFetchDialog(data.fields, actres, mapping => {
-          return store.joinFields(mapping).then(render);
+          return store.joinFields(win.URLQuery().id, mapping).then(render);
         });
       });
       header.renderStatus(
@@ -47,8 +47,8 @@ function render() {
           d3.select('#prompt-submit')
             .on('click', () => {
               const name = d3form.value('#prompt-input');
-              return store.updateTableAttribute('name', name, data.id)
-                .then(() => store.getTable()) // updateTableAttribute returns 1
+              return store.updateTableAttribute(data.id, 'name', name)
+                .then(() => store.getTable(win.URLQuery().id)) // updateTableAttribute returns 1
                 .then(t => header.renderStatus(
                   t, () => fetchResults().then(render),
                   () => fetchResults('abort').then(render))
@@ -109,7 +109,7 @@ function loadNewTable(data) {
 
 
 function fetchResults(command='update') {
-  return store.getTable()
+  return store.getTable(win.URLQuery().id)
     .then(data => {
       if (!def.ongoing(data)) return Promise.reject();
       return data;

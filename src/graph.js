@@ -34,7 +34,7 @@ function takeSnapshot() {
 
 
 function saveSnapshot() {
-  return store.updateTableAttribute('snapshot', takeSnapshot())
+  return store.updateTableAttribute(win.URLQuery().id, 'snapshot', takeSnapshot())
     .then(() => console.info('Snapshot saved'));
 }
 
@@ -79,9 +79,9 @@ function resume(snapshot) {
 
 
 function getGraph() {
-  return store.getTable()
+  return store.getTable(win.URLQuery().id)
     .then(edges => {
-      return store.getTable(edges.nodeTableId)
+      return store.getTable(edges.nodesID)
         .then(nodes => {
           return {edges: edges, nodes: nodes};
         });
@@ -129,7 +129,7 @@ function render() {
       g.nodes.records.forEach(e => { delete e._mol; });
       dialog.graphConfigDialog(
           g.edges.networkThreshold, g.edges.query.threshold, thld => {
-        return store.updateTableAttribute('networkThreshold', thld)
+        return store.updateTableAttribute(win.URLQuery().id, 'networkThreshold', thld)
           .then(saveSnapshot)
           .then(start);
       });
@@ -147,13 +147,13 @@ function render() {
           },
           mapping: comm
         };
-        store.joinFields(mapping, g.nodes.id)
+        store.joinFields(g.nodes.id, mapping)
           .then(() => {
             const snapshot = takeSnapshot();
             snapshot.nodeColor.field = query.name;
             snapshot.nodeColor.scale = d3scale.colorPresets
               .find(e => e.name === 'Categories').scale;
-            return store.updateTableAttribute('snapshot', snapshot)
+            return store.updateTableAttribute(win.URLQuery().id, 'snapshot', snapshot)
               .then(() => console.info('snapshot saved'));
           }).then(render);
       });
@@ -175,8 +175,8 @@ function render() {
           d3.select('#prompt-submit')
             .on('click', () => {
               const name = d3form.value('#prompt-input');
-              return store.updateTableAttribute('name', name)
-                .then(() => store.getTable())  // updateTableAttribute returns 1
+              return store.updateTableAttribute(win.URLQuery().id, 'name', name)
+                .then(() => store.getTable(win.URLQuery().id))  // updateTableAttribute returns 1
                 .then(t => header.renderStatus(t,
                   () => fetchResults().then(render),
                   () => fetchResults('abort').then(render))
@@ -200,7 +200,7 @@ function loadNewGraph(data) {
 
 // TODO: duplicate of datatable.fetchResults
 function fetchResults(command='update') {
-  return store.getTable()
+  return store.getTable(win.URLQuery().id)
     .then(data => {
       if (!def.ongoing(data)) return Promise.reject();
       return data;

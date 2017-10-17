@@ -7,6 +7,7 @@ import KArray from '../helper/KArray.js';
 import {default as d3form} from '../helper/d3Form.js';
 import {default as mapper} from '../helper/mapper.js';
 import {default as fmt} from '../helper/formatValue.js';
+import {default as win} from '../helper/window.js';
 import {default as hfile} from '../helper/file.js';
 import {default as parser} from '../helper/parser.js';
 import {default as himg} from '../helper/image.js';
@@ -234,7 +235,7 @@ function columnDialog(dataFields, callback) {
         sortTypes: d3form.optionValues('.column-sort'),
         digits: d3form.optionValues('.column-digit')
       };
-      return store.setFieldProperties(query)
+      return store.setFieldProperties(win.URLQuery().id, query)
         .then(callback);
     });
 }
