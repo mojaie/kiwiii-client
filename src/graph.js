@@ -92,7 +92,9 @@ function getGraph() {
 function start() {
   return getGraph()
     .then(g => {
-      header.renderStatus(g.edges, fetchResults, () => fetchResults('abort'));
+      header.renderStatus(g.edges,
+        () => fetchResults().then(render),
+        () => fetchResults('abort').then(render));
       const edgesToDraw = g.edges.records
         .filter(e => e.weight >= g.edges.networkThreshold);
       const edgeDensity = d3.format('.3e')(edgesToDraw.length / g.edges.searchCount);
@@ -175,7 +177,10 @@ function render() {
               const name = d3form.value('#prompt-input');
               return store.updateTableAttribute('name', name)
                 .then(() => store.getTable())  // updateTableAttribute returns 1
-                .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
+                .then(t => header.renderStatus(t,
+                  () => fetchResults().then(render),
+                  () => fetchResults('abort').then(render))
+                );
             });
         });
       return start();

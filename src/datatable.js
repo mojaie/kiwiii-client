@@ -36,7 +36,9 @@ function render() {
           return store.joinFields(mapping).then(render);
         });
       });
-      header.renderStatus(data, fetchResults, () => fetchResults('abort'));
+      header.renderStatus(
+        data, () => fetchResults().then(render),
+        () => fetchResults('abort').then(render));
       d3.select('#rename')
         .on('click', () => {
           d3.select('#prompt-title').text('Rename table');
@@ -47,7 +49,10 @@ function render() {
               const name = d3form.value('#prompt-input');
               return store.updateTableAttribute('name', name, data.id)
                 .then(() => store.getTable()) // updateTableAttribute returns 1
-                .then(t => header.renderStatus(t, fetchResults, () => fetchResults('abort')));
+                .then(t => header.renderStatus(
+                  t, () => fetchResults().then(render),
+                  () => fetchResults('abort').then(render))
+                );
             });
         });
       // Following operations use data.records
