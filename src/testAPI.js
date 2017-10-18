@@ -52,6 +52,24 @@ testCases.push(() =>
 );
 
 testCases.push(() =>
+  new Promise(r => {
+    fetcher.get('async', {
+      type: 'fieldsearch',
+      targets: ['test1_retest', 'test1_ic50', 'freqhit_b', 'nodata_ic50'],
+      key: 'id',
+      values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
+    }).then(fetcher.json)
+      .then(res => {
+        setTimeout(() => {
+          const query = {id: res.id, command: 'abort'};
+          fetcher.get('res', query).then(fetcher.json).then(rows => r([res, rows]));
+        }, 2000);
+      });
+  }).then(res => ({output: res, test: 'fieldsearch', pass: true}))
+    .catch(err => ({output: err, test: 'fieldsearch', pass: false}))
+);
+
+testCases.push(() =>
   fetcher.get('strprev', {
     format: 'dbid',
     source: 'drugbankfda',
