@@ -241,7 +241,7 @@ function columnDialog(dataFields, callback) {
 }
 
 
-function fieldFetchDialog(dataFields, resources, callback) {
+function fieldFetchDialog(compoundIDs, dataFields, resources, callback) {
   // Prevent implicit submission
   document.getElementById('join-search')
     .addEventListener('keypress', event => {
@@ -269,16 +269,19 @@ function fieldFetchDialog(dataFields, resources, callback) {
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');
       const selected = d3form.checkboxValues('#join-keys');
-      const queryFieldKeys = resources.map(e => e.key)
+      const queryFieldKeys = resourceFields.map(e => e.key)
         .filter(e => !dataKeys.includes(e))
         .filter(e => selected.includes(e));
       const query = {
-        type: 'mapping',
-        targets: queryFieldKeys
+        type: 'fieldfilter',
+        targetFields: queryFieldKeys,
+        key: 'id',
+        values: compoundIDs
       };
-    return fetcher.get('run', query)
-      .then(fetcher.json)
-      .then(callback, fetcher.error);
+      return fetcher.get('run', query)
+        .then(fetcher.json)
+        .then(json => callback(mapper.tableToMapping(json, 'id')),
+              fetcher.error);
   });
 }
 
@@ -291,7 +294,7 @@ function fieldFileDialog(callback) {
       const isCsv = file.name.split('.').pop() === 'csv';
       hfile.readFile(file).then(res => {
         const mapping = isCsv ? mapper.csvToMapping(res) : JSON.parse(res);
-        const tbl = mapper.columnMappingToTable(mapping);
+        const tbl = mapper.mappingToTable(mapping);
         d3.select('#importcol-preview').call(cmp.createTable, tbl)
           .call(cmp.updateTableRecords,
                 tbl.records.slice(0, 5), d => d[tbl.fields[0].key]);
@@ -306,7 +309,7 @@ function fieldFileDialog(callback) {
       // Generate thumbnails
       const plotCols = [];
       if (mapping.hasOwnProperty('field')) {
-        mapping = mapper.singleToMultiMapping(mapping);
+        mapping = mapper.singleToMulti(mapping);
       }
       mapping.fields.forEach((e, i) => {
         if (e.valueType === 'plot') {

@@ -30,12 +30,6 @@ function render() {
       dialog.fieldFileDialog(mapping => {
         return store.joinFields(win.URLQuery().id, mapping).then(render);
       });
-      store.getResources().then(rsrc => {
-        const actres = rsrc.filter(e => e.domain === 'activity');
-        dialog.fieldFetchDialog(data.fields, actres, mapping => {
-          return store.joinFields(win.URLQuery().id, mapping).then(render);
-        });
-      });
       header.renderStatus(
         data, () => fetchResults().then(render),
         () => fetchResults('abort').then(render));
@@ -62,6 +56,15 @@ function render() {
         .call(grid.createDataGrid, data)
         .call(grid.dataGridRecords, copied, d => d._index)
         .call(grid.addSort, copied, d => d._index);
+      store.getResources().then(rsrc => {
+        const actres = rsrc.filter(e => e.domain === 'activity');
+        const compoundIDs = data.records.map(e => e.id);
+        dialog.fieldFetchDialog(compoundIDs, data.fields, actres, mapping => {
+          return store.joinFields(win.URLQuery().id, mapping).then(render);
+        });
+
+
+      });
       dialog.graphDialog(params => {
         const formData = new FormData();
         formData.append('contents', new Blob([JSON.stringify(data)]));

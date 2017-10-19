@@ -34,7 +34,8 @@ function mappingToTable(mapping) {
     key: mp.key,
     name: mp.key,
     sort: 'text',
-    visible: true
+    visible: true,
+    digit: 'raw'
   };
   const data = {
     fields: [keyField].concat(mp.fields),
@@ -42,12 +43,39 @@ function mappingToTable(mapping) {
       const rcd = {};
       rcd[mp.key] = entry[0];
       mp.fields.forEach((f, i) => {
-        rcd[f] = entry[1][i];
+        rcd[f.key] = entry[1][i];
       });
       return rcd;
     })
   };
+  data.fields.forEach(e => {
+    if (!e.hasOwnProperty('visible')) e.visible = true;
+    if (!e.hasOwnProperty('digit')) e.digit = 'raw';
+  });
   return data;
+}
+
+
+/**
+ * Convert table to field mapping
+ * @param {object} table - table
+ * @param {object} key - key
+ * @return {object} field mapping
+ */
+function tableToMapping(table, key, ignore=['_index']) {
+  const now = new Date();
+  const mapping = {
+    created: now.toString(),
+    fields: table.fields
+      .filter(e => e.key !== key)
+      .filter(e => !ignore.includes(e.key)),
+    key: key,
+    mapping: {}
+  };
+  table.records.forEach(row => {
+    mapping.mapping[row[key]] = mapping.fields.map(e => row[e.key]);
+  });
+  return mapping;
 }
 
 
@@ -101,9 +129,13 @@ function apply(data, mapping) {
       });
     });
   data.fields = KArray.from(data.fields).concat(mp.fields).unique('key');
+  data.fields.forEach(e => {
+    if (!e.hasOwnProperty('visible')) e.visible = true;
+    if (!e.hasOwnProperty('digit')) e.digit = 'raw';
+  });
 }
 
 
 export default {
-  singleToMulti, mappingToTable, csvToMapping, apply
+  singleToMulti, mappingToTable, tableToMapping, csvToMapping, apply
 };
