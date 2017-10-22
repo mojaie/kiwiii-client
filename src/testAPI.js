@@ -118,6 +118,36 @@ testCases.push(() =>
     .catch(err => ({output: err, test: 'prop', pass: false}))
 );
 
+testCases.push(() =>
+  fetcher.get('run', {
+    type: 'chemsearch',
+    targets: ['drugbankfda'],
+    key: 'id',
+    values: ['DB00186', 'DB00189', 'DB00193', 'DB00203', 'DB00764', 'DB00863',
+             'DB00865', 'DB00868', 'DB01143', 'DB01240', 'DB01242', 'DB01361',
+             'DB01366', 'DB02638', 'DB02959']
+  }).then(fetcher.json)
+    .then(res =>
+      new Promise(r => {
+        const params = {
+          measure: 'gls', threshold: 0.25, ignoreHs: true,
+          diameter: 8, maxTreeSize: 40, molSizeCutoff: 500
+        };
+        const formData = new FormData();
+        formData.append('contents', new Blob([JSON.stringify(res)]));
+        formData.append('params', JSON.stringify(params));
+        fetcher.post('simnet', formData)
+          .then(fetcher.json)
+          .then(res => {
+            setTimeout(() => {
+              const query = {id: res.id, command: 'abort'};
+              fetcher.get('res', query).then(fetcher.json).then(rows => r([res, rows]));
+            }, 2000);
+          });
+      }).then(res => ({output: res, test: 'simnet', pass: true}))
+        .catch(err => ({output: err, test: 'simnet', pass: false}))
+    )
+);
 
 function run() {
   const tbl = {

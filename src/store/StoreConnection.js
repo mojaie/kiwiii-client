@@ -66,6 +66,7 @@ function setFieldProperties(id, updates) {
       fd.sortType = updates.sortTypes[i];
       fd.digit = updates.digits[i];
     });
+    item.revision++;
   })
   .catch(err => {
     console.error(`Unexpected table ID: ${id} or updates: ${updates}`);
@@ -77,6 +78,7 @@ function setFieldProperties(id, updates) {
 function joinFields(id, mapping) {
   return store.updateItem(id, item => {
     mapper.apply(item, mapping);
+    item.revision++;
   })
   .catch(err => {
     console.error(`Unexpected table ID: ${id} or mapping: ${mapping}`);
@@ -88,6 +90,7 @@ function joinFields(id, mapping) {
 function updateTableAttribute(id, key, value) {
   return store.updateItem(id, item => {
     item[key] = value;
+    item.revision++;
   })
   .catch(err => {
     console.error(`Unexpected table ID: ${id}, key: ${key} or value: ${value}`);
@@ -120,6 +123,7 @@ function updateTable(data) {
   // update
   return store.updateItem(data.id, item => {
     Object.assign(item, setDefaultFieldProperties(data));
+    item.revision++;
   });
 }
 

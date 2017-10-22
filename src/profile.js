@@ -4,7 +4,7 @@ import {default as d3form} from './helper/d3Form.js';
 import {default as fmt} from './helper/formatValue.js';
 import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
-import {default as loader} from './Loader.js';
+import {default as common} from './common.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as cmp} from './component/Component.js';
 
@@ -112,7 +112,7 @@ function updateActivities() {
 
 
 function run() {
-  return loader.loader()
+  return common.loader()
     .then(() => store.getResources())
     .then(rsrcs => Promise.all([
       updateChem(rsrcs).then(qrcd => updateChemAliases(rsrcs, qrcd)),

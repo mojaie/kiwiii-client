@@ -4,11 +4,10 @@
 import d3 from 'd3';
 
 import {default as d3form} from './helper/d3Form.js';
-import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
 import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
-import {default as loader} from './Loader.js';
+import {default as common} from './common.js';
 import {default as store} from './store/StoreConnection.js';
 import {default as dialog} from './component/Dialog.js';
 import {default as header} from './component/Header.js';
@@ -31,8 +30,8 @@ function render() {
         return store.joinFields(win.URLQuery().id, mapping).then(render);
       });
       header.renderStatus(
-        data, () => fetchResults().then(render),
-        () => fetchResults('abort').then(render));
+        data, () => common.fetchResults().then(render),
+        () => common.fetchResults('abort').then(render));
       d3.select('#rename')
         .on('click', () => {
           d3.select('#prompt-title').text('Rename table');
@@ -44,8 +43,8 @@ function render() {
               return store.updateTableAttribute(data.id, 'name', name)
                 .then(() => store.getTable(win.URLQuery().id)) // updateTableAttribute returns 1
                 .then(t => header.renderStatus(
-                  t, () => fetchResults().then(render),
-                  () => fetchResults('abort').then(render))
+                  t, () => common.fetchResults().then(render),
+                  () => common.fetchResults('abort').then(render))
                 );
             });
         });
@@ -73,10 +72,11 @@ function render() {
           .then(fetcher.json)
           .then(json => {
             json.networkThreshold = json.query.threshold;
-            return store.insertTable(json).then(() => {
-              d3.select('#loading-circle').style('display', 'none');
-              window.open(`graph.html?id=${json.id}`, '_blank');
-            });
+            return common.interactiveInsert(json)
+              .then(id => {
+                d3.select('#loading-circle').style('display', 'none');
+                window.open(`graph.html?id=${id}`, '_blank');
+              });
           }, fetcher.error);
       });
       d3.select('#export')
@@ -104,25 +104,11 @@ function render() {
 
 
 function loadNewTable(data) {
-  return store.insertTable(data)
-    .then(() => {
-      window.location = `datatable.html?id=${data.id}`;
+  return common.interactiveInsert(data)
+    .then(id => {
+      // window.open(`datatable.html?id=${id}`);
+      window.location = `datatable.html?id=${id}`;
     });
-}
-
-
-function fetchResults(command='update') {
-  return store.getTable(win.URLQuery().id)
-    .then(data => {
-      if (!def.ongoing(data)) return Promise.reject();
-      return data;
-    })
-    .then(data => {
-      const query = {id: data.id, command: command};
-      return fetcher.get('res', query)
-        .then(fetcher.json)
-        .then(store.updateTable, fetcher.error);
-    }, () => Promise.resolve());
 }
 
 
@@ -138,12 +124,12 @@ function run() {
   if (win.URLQuery().hasOwnProperty('location')) {
     const url = win.URLQuery().location;
     return hfile.fetchJSON(url)
-      .then(data => store.insertTable(data))
+      .then(common.interactiveInsert)
       .then(id => {
         window.location = `datatable.html?id=${id}`;
       });
   }
-  return loader.loader().then(serverStatus => {
+  return common.loader().then(serverStatus => {
     if (!serverStatus) {
       // Disable offline comannds
       d3.selectAll('.online-command')
@@ -154,7 +140,7 @@ function run() {
     // Loading tables
     if (win.URLQuery().hasOwnProperty('id')) {
       header.initializeWithData();
-      return fetchResults().then(render);
+      return common.fetchResults().then(render);
     } else {
       header.initialize();
       dialog.sdfDialog(loadNewTable);

@@ -9,7 +9,7 @@ import {default as mapper} from '../helper/mapper.js';
 import {default as fmt} from '../helper/formatValue.js';
 import {default as win} from '../helper/window.js';
 import {default as hfile} from '../helper/file.js';
-import {default as parser} from '../helper/parser.js';
+import {default as misc} from '../helper/misc.js';
 import {default as himg} from '../helper/image.js';
 import {default as store} from '../store/StoreConnection.js';
 import {default as cmp} from './Component.js';
@@ -155,7 +155,7 @@ function sdfDialog(callback) {
       const file = document.getElementById('sdf-file').files[0];
       reader.onload = (e) => {
         d3.select('#sdf-cols')
-          .call(cmp.checkboxList, parser.getSDFPropList(e.target.result),
+          .call(cmp.checkboxList, misc.getSDFPropList(e.target.result),
                 'fields', d => d, d => d
           );
       };
@@ -393,8 +393,18 @@ function communityDialog(callback) {
 }
 
 
+function importConfirmDialog(callback) {
+  d3.select('#importconfirm-overwrite')
+    .on('click', () => callback('overwrite'));
+  d3.select('#importconfirm-keepboth')
+    .on('click', () => callback('keepboth'));
+  d3.select('#importconfirm-cancel')
+    .on('click', () => callback('cancel'));
+}
+
+
 export default {
   pickDialog, propDialog, structDialog, sdfDialog,
   columnDialog, fieldFetchDialog, fieldFileDialog, graphDialog,
-  graphConfigDialog, communityDialog
+  graphConfigDialog, communityDialog, importConfirmDialog
 };

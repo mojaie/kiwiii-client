@@ -1,7 +1,7 @@
 
 import d3 from 'd3';
 
-import {default as loader} from './Loader.js';
+import {default as common} from './common.js';
 import {default as fetcher} from './fetcher.js';
 import {default as cmp} from './component/Component.js';
 import {default as store} from './store/StoreConnection.js';
@@ -103,7 +103,7 @@ function run() {
       d3.select('#confirm-submit')
         .on('click', () => store.reset().then(run));
     });
-  return loader.loader().then(serverStatus => {
+  return common.loader().then(serverStatus => {
     if (serverStatus) renderServerStatus(serverStatus);
     return Promise.all([
       store.getTablesByDataType('nodes').then(renderTableStatus),
