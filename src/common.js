@@ -10,40 +10,29 @@ import {default as fetcher} from './fetcher.js';
 function interactiveInsert(data) {
   return store.getTable(data.id)
     .then(found => {
-      if (!found) {
-        console.log('no existing table');
-        return Promise.resolve(data);
-      }
-      if (data.revision == found.revision) {
-        console.log('same revision');
-        return Promise.reject(data.id);
-      }
+      if (!found) return Promise.resolve(data); // no existing table
+      if (data.revision == found.revision) return Promise.reject(data.id); // same revision
       // data id conflict
       $('#importconfirm-dialog').modal('toggle');
       return new Promise(res => {
         dialog.importConfirmDialog(action => {
           if (action === 'overwrite') {
-            console.log('overwrite');
             res(data);
           }
           if (action === 'keepboth') {
-            console.log('keepboth');
             data.id = misc.uuidv4();
             res(data);
           }
         });
       });
     })
-    .then(data => {
-      console.log('update');
-      console.log(data.id);
-      return store.insertTable(data).then(() => data.id);
-    },
-    id => {
-      console.log('no update');
-      if (id) return id;
-      return Promise.reject();
-    });
+    .then(
+      data => store.insertTable(data).then(() => data.id), // insert or update table
+      id => {
+        if (id) return Promise.resolve(id); // same revision -> call existing table
+        return Promise.reject();
+      }
+    );
 }
 
 
