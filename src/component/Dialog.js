@@ -72,7 +72,7 @@ function structDialog(resources, callback) {
     .call(cmp.selectOptions, resources, d => d.id, d => d.name);
   d3.select('#struct-targets')
     .call(cmp.checkboxList, resources, 'targets', d => d.id, d => d.name);
-  store.getAppSetting('rdk').then(rdk => {
+  store.getAppSetting('rdkit').then(rdk => {
     d3.select('#struct-method').selectAll('option.rd')
       .attr('disabled', rdk ? null : 'disabled');
   });
@@ -141,7 +141,8 @@ function structDialog(resources, callback) {
           timeout: method === 'rdfmcs' ? d3form.valueInt('#struct-timeout') : null
         }
       };
-      return fetcher.get('async', query)
+      const command = query.type === 'exact' ? 'run' : 'async';
+      return fetcher.get(command, query)
         .then(fetcher.json)
         .then(callback, fetcher.error);
     });
@@ -337,7 +338,7 @@ function fieldFileDialog(callback) {
 
 
 function graphDialog(callback) {
-  store.getAppSetting('rdk').then(rdk => {
+  store.getAppSetting('rdkit').then(rdk => {
     d3.select('#graph-measure').selectAll('option.rd')
       .attr('disabled', rdk ? null : 'disabled');
   });
