@@ -39,7 +39,7 @@ function colorControlInput(id) {
 
 function labelControlInput() {
   const data = colorControlInput('label');
-  data.text = d3form.value('#label-text');
+  data.text = d3form.optionData('#label-text');
   data.size = d3form.value('#label-size');
   data.visible = d3form.checked('#label-visible');
   return data;
@@ -96,13 +96,16 @@ function edgeControlInput() {
 
 function updateNodeColor(data) {
   d3.selectAll('.node').select('.node-symbol')
-    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
+    .style('fill', d =>
+      d3scale.scaleFunction(data.scale)(data.field ? d[data.field.key] : null)
+    );
 }
 
 
 function updateNodeSize(data) {
   d3.selectAll('.node').select('.node-symbol')
-    .attr('r', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
+    .attr('r', d =>
+      d3scale.scaleFunction(data.scale)(data.field ? d[data.field.key] : null));
 }
 
 
@@ -113,15 +116,17 @@ function updateNodeLabelVisibility(visible) {
 
 
 function updateNodeLabel(data) {
+  if (!data.hasOwnProperty(data.text)) return;
   d3.selectAll('.node').select('.node-label')
     .text(d => {
-      if (!d.hasOwnProperty(data.text)) return '';
-      if (data.field.digit === 'raw') return d[data.text];
-      return fmt.formatNum(d[data.text], data.field.digit);
+      if (!d.hasOwnProperty(data.text.key)) return '';
+      if (data.text.digit === 'raw') return d[data.text.key];
+      return fmt.formatNum(d[data.text.key], data.text.digit);
     })
     .attr('font-size', data.size)
     .attr('visibility', data.visible ? 'inherit' : 'hidden')
-    .style('fill', d => d3scale.scaleFunction(data.scale)(d[data.field.key]));
+    .style('fill', d =>
+      d3scale.scaleFunction(data.scale)(data.field ? d[data.field.key] : null));
 }
 
 
@@ -201,11 +206,9 @@ function updateScale(scale, id) {
 function updateControl(data) {
   const id = data.id;
   d3.select(`#${id}-visible`).attr('checked', data.visible ? 'checked' : null);
-  d3.select(`#${id}-text`).property('value', data.text);
   d3.select(`#${id}-size`).property('value', data.size);
-  if (data.hasOwnProperty('field')) {
-    d3.select(`#${id}-col`).property('value', data.field.key);
-  }
+  d3.select(`#${id}-text`).property('value', data.text ? data.text.key : null);
+  d3.select(`#${id}-col`).property('value', data.field ? data.field.key : null);
   if (data.hasOwnProperty('label')) {
     d3.select(`#${id}-label-visible`)
       .attr('checked', data.label.visible ? 'checked' : null);
@@ -337,6 +340,6 @@ function edgeControlBox() {
 
 
 export default {
-  updateNodeStructure, updateNodeImage, updateControl,
+  updateNodeStructure, updateNodeImage, updateEdge, updateControl,
   mainControlBox, nodeColorControlBox, nodeLabelControlBox, nodeSizeControlBox, edgeControlBox
 };

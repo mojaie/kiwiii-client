@@ -12,6 +12,7 @@ import {default as store} from './store/StoreConnection.js';
 import {default as header} from './component/Header.js';
 import {default as dialog} from './component/Dialog.js';
 import {default as force} from './graph/GraphForce.js';
+import {default as dflt} from './graph/defaultGraphControl.js';
 import {default as control} from './graph/GraphControlBox.js';
 import {default as component} from './graph/GraphComponent.js';
 import {default as interaction} from './graph/GraphInteraction.js';
@@ -85,7 +86,27 @@ function start() {
       d3.select('#network-thld').text(g.edges.networkThreshold);
       component.graphEdges(d3.select('#graph-contents'), edgesToDraw);
       component.graphNodes(d3.select('#graph-contents'), g.nodes.records);
-      d3.select('#show-struct').property('checked', false);  // for fast loading
+
+      // TODO: refactor
+      d3.select('#color-control').datum(dflt.defaultNodeColor);
+      control.updateControl(dflt.defaultNodeColor);
+      d3.select('#size-control').datum(dflt.defaultNodeSize);
+      control.updateControl(dflt.defaultNodeSize);
+      d3.select('#label-control').datum(dflt.defaultNodeLabel);
+      control.updateControl(dflt.defaultNodeLabel);
+      d3.select('#main-control').datum(dflt.defaultNodeContent);
+      d3.select('#show-struct')
+        .property('checked', dflt.defaultNodeContent.structure.visible);
+      d3.select('#edge-control').datum(dflt.defaultEdge);
+      control.updateControl(dflt.defaultEdge);
+      control.updateNodeImage({
+        nodeColor: dflt.defaultNodeColor,
+        nodeSize: dflt.defaultNodeSize,
+        nodeLabel: dflt.defaultNodeLabel,
+        nodeContent: dflt.defaultNodeContent
+      });
+      control.updateEdge(dflt.defaultEdge);
+
       force.setForce(
         g.nodes.records, edgesToDraw, force.tick,
         () => {
