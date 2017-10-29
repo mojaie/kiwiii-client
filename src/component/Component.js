@@ -36,6 +36,31 @@ function checkboxList(selection, data, name, key, text) {
 }
 
 
+// checkbox list with tooltip
+// call $('[data-toggle="tooltip"]').tooltip() after this function
+function checkboxListT(selection, data, name, key, text) {
+  const items = selection.selectAll('li').data(data, key);
+  items.exit().remove();
+  const entered = items.enter().append('li')
+    .attr('class', 'form-check')
+    .append('label');
+  entered.append('input');
+  entered.append('a');
+  const updated = entered.merge(items.select('label'))
+    .attr('class', 'form-check-label');
+  updated.select('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'form-check-input')
+    .attr('name', name)
+    .attr('value', key);
+  updated.select('a')
+    .attr('data-toggle', 'tooltip')
+    .attr('data-placement', 'bottom')
+    .attr('title', d => d.description || 'No')
+    .text(text);
+}
+
+
 function createTable(selection, data) {
   // Header
   if (selection.select('thead').size()) selection.select('thead').remove();
@@ -130,7 +155,7 @@ function formatNumbers(selection) {
 
 
 export default {
-  selectOptions, checkboxList,
+  selectOptions, checkboxList, checkboxListT,
   createTable, updateTableRecords,
   appendTableRows, addSort, formatNumbers
 };
