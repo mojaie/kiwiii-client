@@ -33,7 +33,7 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.get('run', {
     type: 'filter',
-    targets: ['test1', 'test1_2', 'freqhit'],
+    targets: ['exp_results'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
     operator: 'in'
@@ -54,7 +54,8 @@ testCases.push(() =>
 testCases.push(() =>
   fetcher.get('run', {
     type: 'fieldfilter',
-    targetFields: ['test1_retest', 'test1_ic50', 'freqhit_b', 'nodata_ic50'],
+    targetAssays: ['test1', 'assay_b', 'test1_fp'],
+    targetFields: ['inh', 'ic50', 'valid'],
     key: 'id',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
   }).then(fetcher.json)
