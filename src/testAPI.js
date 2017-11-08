@@ -34,7 +34,7 @@ testCases.push(() =>
   fetcher.get('run', {
     type: 'filter',
     targets: ['exp_results'],
-    key: 'id',
+    key: 'compoundID',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
     operator: 'in'
   }).then(fetcher.json)
@@ -56,7 +56,7 @@ testCases.push(() =>
     type: 'fieldfilter',
     targetAssays: ['test1', 'assay_b', 'test1_fp'],
     targetFields: ['inh', 'ic50', 'valid'],
-    key: 'id',
+    key: 'compoundID',
     values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
   }).then(fetcher.json)
     .then(res => ({output: res, test: 'fieldsearch', pass: true}))
