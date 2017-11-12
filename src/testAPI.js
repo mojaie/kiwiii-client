@@ -52,18 +52,6 @@ testCases.push(() =>
 );
 
 testCases.push(() =>
-  fetcher.get('run', {
-    type: 'fieldfilter',
-    targetAssays: ['test1', 'assay_b', 'test1_fp'],
-    targetFields: ['inh', 'ic50', 'valid'],
-    key: 'compoundID',
-    values: ['DB00189', 'DB00193', 'DB00203', 'DB00865', 'DB01143'],
-  }).then(fetcher.json)
-    .then(res => ({output: res, test: 'fieldsearch', pass: true}))
-    .catch(err => ({output: err, test: 'fieldsearch', pass: false}))
-);
-
-testCases.push(() =>
   fetcher.get('strprev', {
     format: 'dbid',
     source: 'drugbankfda',
