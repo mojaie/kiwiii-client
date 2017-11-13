@@ -6,6 +6,7 @@ import d3 from 'd3';
 import KArray from '../helper/KArray.js';
 import {default as d3form} from '../helper/d3Form.js';
 import {default as mapper} from '../helper/mapper.js';
+import {default as def} from '../helper/definition.js';
 import {default as fmt} from '../helper/formatValue.js';
 import {default as win} from '../helper/window.js';
 import {default as hfile} from '../helper/file.js';
@@ -184,12 +185,12 @@ function sdfDialog(callback) {
 
 function columnDialog(dataFields, callback) {
   const table = {
-    fields: [
-      {key: 'name', sortType: 'text', visible: true},
-      {key: 'visible', sortType: 'none', valueType: 'control', visible: true},
-      {key: 'sortType', sortType: 'none', valueType: 'control', visible: true},
-      {key: 'digit', sortType: 'none', valueType: 'control', visible: true}
-    ]
+    fields: def.defaultFieldProperties([
+      {key: 'name', valueType: 'text'},
+      {key: 'visible', valueType: 'control'},
+      {key: 'sortType', valueType: 'control'},
+      {key: 'digit', valueType: 'control'}
+    ])
   };
   const records = dataFields.map((e, i) => {
     return {

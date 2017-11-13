@@ -2,6 +2,7 @@
 /** @module helper/dataStructure */
 
 import KArray from './KArray.js';
+import {default as def} from './definition.js';
 
 
 /**
@@ -30,15 +31,9 @@ function singleToMulti(mapping) {
  */
 function mappingToTable(mapping) {
   const mp = mapping.hasOwnProperty('field') ? singleToMulti(mapping) : mapping;
-  const keyField = {
-    key: mp.key,
-    name: mp.key,
-    sort: 'text',
-    visible: true,
-    digit: 'raw'
-  };
+  const keyField = {key: mp.key, valueType: 'text'};
   const data = {
-    fields: [keyField].concat(mp.fields),
+    fields: def.defaultFieldProperties([keyField].concat(mp.fields)),
     records: Object.entries(mp.mapping).map(entry => {
       const rcd = {};
       rcd[mp.key] = entry[0];
@@ -48,10 +43,6 @@ function mappingToTable(mapping) {
       return rcd;
     })
   };
-  data.fields.forEach(e => {
-    if (!e.hasOwnProperty('visible')) e.visible = true;
-    if (!e.hasOwnProperty('digit')) e.digit = 'raw';
-  });
   return data;
 }
 
@@ -66,9 +57,9 @@ function tableToMapping(table, key, ignore=['_index']) {
   const now = new Date();
   const mapping = {
     created: now.toString(),
-    fields: table.fields
+    fields: def.defaultFieldProperties(table.fields
       .filter(e => e.key !== key)
-      .filter(e => !ignore.includes(e.key)),
+      .filter(e => !ignore.includes(e.key))),
     key: key,
     mapping: {}
   };
@@ -89,18 +80,19 @@ function csvToMapping(csvString) {
   const header = lines.shift().split(',');
   const key = header.shift();
   const now = new Date();
-  const mapping = {
-    created: now.toString(),
-    fields: [],
-    key: key,
-    mapping: {}
-  };
   const headerIdx = [];
+  const fields = [];
   header.forEach((h, i) => {
     if (h === '') return;
     headerIdx.push(i);
-    mapping.fields.push({key: h, name: h, sort: 'text', visible: true});
+    fields.push({key: h, valueType: 'text'});
   });
+  const mapping = {
+    created: now.toString(),
+    fields: def.defaultFieldProperties(fields),
+    key: key,
+    mapping: {}
+  };
   lines.forEach(line => {
     const values = line.split(',');
     const k = values.shift();
@@ -128,11 +120,8 @@ function apply(data, mapping) {
         rcd[fd.key] = mp.mapping[rcd[mp.key]][i];
       });
     });
-  data.fields = KArray.from(data.fields).concat(mp.fields).unique('key');
-  data.fields.forEach(e => {
-    if (!e.hasOwnProperty('visible')) e.visible = true;
-    if (!e.hasOwnProperty('digit')) e.digit = 'raw';
-  });
+  data.fields = def.defaultFieldProperties(
+    KArray.from(data.fields).concat(mp.fields).unique('key'));
 }
 
 

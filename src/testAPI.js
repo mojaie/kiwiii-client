@@ -2,6 +2,7 @@
 import d3 from 'd3';
 
 import {default as cmp} from './component/Component.js';
+import {default as def} from './helper/definition.js';
 import {default as fetcher} from './fetcher.js';
 
 
@@ -140,10 +141,10 @@ testCases.push(() =>
 
 function run() {
   const tbl = {
-      fields: [
-        {key: 'test', sort: 'text', visible: true},
-        {key: 'result', sort: 'text', visible: true}
-      ],
+      fields: def.defaultFieldProperties([
+        {key: 'test', valueType: 'text'},
+        {key: 'result', valueType: 'text'}
+      ]),
       records: []
   };
   d3.select('#test').call(cmp.createTable, tbl);

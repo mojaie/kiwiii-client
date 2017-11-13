@@ -52,7 +52,7 @@ function createDataGrid(selection, data) {
       .style('display', 'inline-block')
     .merge(header)
       .style('width', d => `${d.width}px`)
-      .text(d => d.hasOwnProperty('name') ? d.name : d.key);
+      .text(d => d.name);
 }
 
 
@@ -95,9 +95,7 @@ function updateRows(selection, rcds, keyFunc, position, visibleRows) {
             if (cData[i].valueType === 'image') {  // data URI
               return `<img src="${value}" width="180" height="180"/>`;
             }
-            if (cData[i].hasOwnProperty('digit') && cData[i].digit !== 'raw') {
-              return fmt.formatNum(value, cData[i].digit);
-            }
+            if (cData[i].digit !== 'raw') return fmt.formatNum(value, cData[i].digit);
             return value;
           })
           .each(function(_, i) {
@@ -156,7 +154,7 @@ function addSort(selection, rcds, keyFunc) {
     .on('click', d => {
       const isAsc = d3.select(`#sort-${d.key}`).text() === 'v';
       d3.select(`#sort-${d.key}`).text(isAsc ? '^' : 'v');
-      const isNum = !d.hasOwnProperty('sortType') || d.sortType === 'numeric';
+      const isNum = d.sortType === 'numeric';
       const cmp = isAsc
         ? (isNum ? fmt.numericAsc : fmt.textAsc)
         : (isNum ? fmt.numericDesc : fmt.textDesc);

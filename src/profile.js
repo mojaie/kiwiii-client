@@ -1,6 +1,7 @@
 
 import d3 from 'd3';
 import {default as d3form} from './helper/d3Form.js';
+import {default as def} from './helper/definition.js';
 import {default as fmt} from './helper/formatValue.js';
 import {default as win} from './helper/window.js';
 import {default as fetcher} from './fetcher.js';
@@ -28,10 +29,10 @@ function updateChem(resources) {
         .filter(e => !['_structure', '_index', 'id'].includes(e.key))
         .map(e => ({ key: e.name, value: rcd[e.key] }));
       const data = {
-        fields: [
-          {key: 'key', sort: 'text', visible: true},
-          {key: 'value', sort: 'text', visible: true}
-        ]
+        fields: def.defaultFieldProperties([
+          {key: 'key', valueType: 'text'},
+          {key: 'value', valueType: 'text'}
+        ])
       };
       d3.select('#properties').call(cmp.createTable, data)
         .call(cmp.updateTableRecords, records, d => d.key);
@@ -63,10 +64,10 @@ function updateChemAliases(resources, qrcd) {
           };
         });
       const data = {
-        fields: [
-          {key: 'id', sort: 'text', visible: true},
-          {key: 'database', sort: 'text', visible: true}
-        ]
+        fields: def.defaultFieldProperties([
+          {key: 'id', valueType: 'text'},
+          {key: 'database', valueType: 'text'}
+        ])
       };
       d3.select('#aliases').call(cmp.createTable, data)
         .call(cmp.updateTableRecords, records, d => d.id);
@@ -96,13 +97,13 @@ function updateActivities() {
     .then(fetcher.json)
     .then(res => {
       const table = {
-        fields: [
-          {key: 'name', sort: 'text', visible: true},
-          {key: 'tags', sort: 'text', visible: true},
-          {key: 'valueType', sort: 'text', visible: true},
-          {key: 'value', sort: 'numeric', visible: true, valueType: 'AC50'},
-          {key: 'remarks', sort: 'none', visible: true}
-        ]
+        fields: def.defaultFieldProperties([
+          {key: '_index', name: 'index', valueType: 'numeric'},
+          {key: 'assayID', valueType: 'text'},
+          {key: 'field', valueType: 'text'},
+          {key: 'valueType', valueType: 'text'},
+          {key: '_value', name: 'value', valueType: 'numeric'}
+        ])
       };
       d3.select('#results').call(cmp.createTable, table)
         .call(cmp.updateTableRecords, res.records, d => d.id)

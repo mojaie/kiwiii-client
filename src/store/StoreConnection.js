@@ -98,17 +98,10 @@ function updateTableAttribute(id, key, value) {
   });
 }
 
-function setDefaultFieldProperties(data) {
-  data.fields.forEach(e => {
-    e.visible = !def.defaultHiddenFields.includes(e.key);
-    e.digit = 'raw';
-  });
-  return data;
-}
-
 
 function insertTable(data) {
-  return store.putItem(setDefaultFieldProperties(data))
+  data.fields = def.defaultFieldProperties(data.fields);
+  return store.putItem(data)
     .catch(err => {
       console.error(`Unexpected data: ${data}`);
       Promise.reject(err);
@@ -122,7 +115,8 @@ function updateTable(data) {
   }
   // update
   return store.updateItem(data.id, item => {
-    Object.assign(item, setDefaultFieldProperties(data));
+    data.fields = def.defaultFieldProperties(data.fields);
+    Object.assign(item, data);
     item.revision++;
   });
 }

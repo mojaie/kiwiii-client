@@ -69,15 +69,13 @@ function createTable(selection, data) {
   if (selection.select('tbody').size()) selection.select('tbody').remove();
     selection.append('tbody');
 
-  const cols = data.fields
-    .filter(e => !e.hasOwnProperty('visible') || e.visible !== false
-  );
+  const cols = data.fields.filter(e => e.visible);
   const header = selection.select('thead tr').selectAll('th')
     .data(cols, d => d.key);
   header.exit().remove();
   header.enter().append('th')
     .merge(header)
-      .text(d => d.name || d.key);
+      .text(d => d.name);
 }
 
 
@@ -99,9 +97,7 @@ function updateTableRecords(selection, rcds, keyFunc) {
       if (header[i].valueType === 'plot') return '[plot]';
       if (header[i].valueType === 'image') return '[image]';
       if (header[i].valueType === 'control') return;
-      if (header[i].hasOwnProperty('digit') && header[i].digit !== 'raw') {
-        return fmt.formatNum(d, header[i].digit);
-      }
+      if (header[i].digit !== 'raw') return fmt.formatNum(d, header[i].digit);
       return d;
     })
     .each((d, i, nodes) => {
@@ -129,7 +125,7 @@ function addSort(selection) {
       .style('text-align', 'center')
     .on('click', d => {
       const isAsc = d3.select(`#sort-${d.key}`).text() === 'v';
-      const isNum = !d.hasOwnProperty('sortType') || d.sortType === 'numeric';
+      const isNum = d.sortType === 'numeric';
       const cmp = isAsc
         ? (isNum ? fmt.numericAsc : fmt.textAsc)
         : (isNum ? fmt.numericDesc : fmt.textDesc);

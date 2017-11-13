@@ -5,6 +5,7 @@ import d3 from 'd3';
 
 import {default as d3form} from './helper/d3Form.js';
 import {default as d3scale} from './helper/d3Scale.js';
+import {default as def} from './helper/definition.js';
 import {default as hfile} from './helper/file.js';
 import {default as win} from './helper/window.js';
 import {default as common} from './common.js';
@@ -146,9 +147,7 @@ function render() {
         );
         const mapping = {
           key: '_index',
-          field: {
-            key: query.name, name: query.name, sort: 'numeric', visible: true
-          },
+          field: def.defaultFieldProperties([{key: query.name, valueType: 'numeric'}]),
           mapping: comm
         };
         store.joinFields(g.nodes.id, mapping)
