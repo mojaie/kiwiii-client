@@ -34,12 +34,12 @@ function tableAction(selection, data, app) {
 
 function renderTableStatus(data) {
   const table = {
-    fields: [
-      {key: 'name'},
-      {key: 'status'},
-      {key: 'resultCount'},
+    fields: def.defaultFieldProperties([
+      {key: 'name', valueType: 'text'},
+      {key: 'status', valueType: 'text'},
+      {key: 'resultCount', valueType: 'count'},
       {key: 'action', valueType: 'control'}
-    ]
+    ])
   };
   const records = data.map(e => {
     e.action = (s) => tableAction(s, e, 'datatable.html');
@@ -52,13 +52,13 @@ function renderTableStatus(data) {
 
 function renderGraphStatus(data) {
   const table = {
-    fields: [
-      {key: 'name'},
-      {key: 'nodesID'},
-      {key: 'status'},
-      {key: 'resultCount'},
+    fields: def.defaultFieldProperties([
+      {key: 'name', valueType: 'text'},
+      {key: 'nodesID', valueType: 'text'},
+      {key: 'status', valueType: 'text'},
+      {key: 'resultCount', valueType: 'count'},
       {key: 'action', valueType: 'control'}
-    ]
+    ])
   };
   const records = data.map(e => {
     e.action = (s) => tableAction(s, e, 'graph.html');
@@ -73,7 +73,10 @@ function renderServerStatus(data) {
   d3.select('#server-calc').call(cmp.createTable, data.calc)
     .call(cmp.updateTableRecords, data.calc.records, d => d._index);
   const server = {
-    fields: [{key: 'key'}, {key: 'value'}]
+    fields: def.defaultFieldProperties([
+      {key: 'key', valueType: 'text'},
+      {key: 'value', valueType: 'text'}
+    ])
   };
   server.records = Object.entries(data)
     .filter(e => e[0] !== 'calc')

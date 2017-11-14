@@ -27,7 +27,7 @@ DB00868\nDB01143\nDB01240\nDB01242\nDB01361\nDB01366\nDB02638\nDB02959');
       const query = {
         type: 'chemsearch',
         targets: resources.filter(e => e.domain === 'chemical').map(e => e.id),
-        key: 'id',
+        key: 'compound_id',
         values: d3form.textareaLines('#pick-queryarea')
       };
       return fetcher.get('run', query)
@@ -239,6 +239,7 @@ function columnDialog(dataFields, callback) {
 }
 
 
+// TODO:
 function fieldFetchDialog(compoundIDs, dataFields, resources, callback) {
   // Prevent implicit submission
   document.getElementById('join-search')
@@ -273,7 +274,7 @@ function fieldFetchDialog(compoundIDs, dataFields, resources, callback) {
       const query = {
         type: 'fieldfilter',
         targetFields: queryFieldKeys,
-        key: 'id',
+        key: 'compound_id',
         values: compoundIDs
       };
       return fetcher.get('run', query)
