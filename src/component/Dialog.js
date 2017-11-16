@@ -18,9 +18,9 @@ import {default as fetcher} from '../fetcher.js';
 
 
 function pickDialog(resources, callback) {
-  d3.select('#pick-queryarea')
-    .text('DB00186\nDB00189\nDB00193\nDB00203\nDB00764\nDB00863\nDB00865\n\
-DB00868\nDB01143\nDB01240\nDB01242\nDB01361\nDB01366\nDB02638\nDB02959');
+  store.getAppSetting('compoundIDPlaceholder').then(ids => {
+    d3.select('#pick-queryarea').text(ids);
+  });
   d3.select('#pick-submit')
     .on('click', () => {
       d3.select('#loading-circle').style('display', 'inline');

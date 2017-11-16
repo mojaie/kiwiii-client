@@ -95,9 +95,11 @@ function loader() {
         .then(schema => {
           console.info(`New resource schema version: ${serverStatus.instance}`);
           return Promise.all([
-            store.setAppSetting('serverInstance', serverStatus.instance),
             store.setResources(schema.resources),
             store.setAppSetting('templates', schema.templates),
+            store.setAppSetting(
+              'compoundIDPlaceholder', schema.compoundIDPlaceholder),
+            store.setAppSetting('serverInstance', serverStatus.instance),
             store.setAppSetting('rdkit', serverStatus.rdkit)
           ])
           .then(() => Promise.resolve(serverStatus));
